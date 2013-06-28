@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.HashMap;
@@ -13,10 +14,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
 import org.icatproject.idsclient.exceptions.BadRequestException;
 import org.icatproject.idsclient.exceptions.ForbiddenException;
-import org.icatproject.idsclient.exceptions.IDSException;
 import org.icatproject.idsclient.exceptions.InsufficientStorageException;
 import org.icatproject.idsclient.exceptions.InternalServerErrorException;
 import org.icatproject.idsclient.exceptions.NotFoundException;
@@ -25,25 +24,38 @@ import org.icatproject.idsclient.exceptions.NotImplementedException;
 /**
  * An IDS client for an instance of an ICAT Data Service. Implements the download methods
  * prepareData, getStatus and getData. The extra methods getDatafile and getDataset are provided as
- * shortcut functions that perform the same function as prepareData but with parameters specific to
- * requesting only datafiles or datasets.
+ * shortcut functions. They perform the same function as prepareData but with parameters specific to
+ * requesting only datafiles or datasets. Another extra method is getDataUrl which returns the URL
+ * from which you can download requested data from.
  */
 public class Client {
 
-    private URL idsUrl = null;
+    private String idsUrl = null;
 
     /**
      * Initiates an IDS client for an instance of an ICAT Data Service specified by the idsURL.
      * 
      * @param idsUrl URL of the IDS RESTful webservice
+     * 
+     * @throws BadRequestException
      */
-    public Client(URL idsUrl) {
-        this.idsUrl = idsUrl;
+    public Client(String idsUrl) throws BadRequestException {
+        if (idsUrl == null) {
+            throw new BadRequestException("You must supply a URL to the IDS.");
+        } else {
+            try {
+                new URL(idsUrl);
+            } catch (MalformedURLException e) {
+                throw new BadRequestException("Bad IDS URL '" + idsUrl + "'");
+            }
+            
+            this.idsUrl = idsUrl;
+        }
     }
 
     /**
-     * Send request to the IDS for the list of investigations, datasets or datafiles to be prepared for
-     * download. 
+     * Send request to the IDS for the list of investigations, datasets or datafiles to be prepared
+     * for download.
      * 
      * @param sessionId        An ICAT session ID
      * @param investigationIds A list of investigation IDs (optional)
@@ -51,12 +63,17 @@ public class Client {
      * @param datafileIds      A list of datafile IDs (optional)
      * @param compress         Compress ZIP archive of files (dependent on ZIP parameter below) (optional)
      * @param zip              Request data to be packaged in a ZIP archive (optional)
-     * @return                 A preparedId for the download request
-     * @throws IDSException    Thrown for problems with IDS request
-     * @throws IOException     Thrown for problems connecting to the IDS
+     * 
+     * @return A preparedId for the download request
+     * 
+     * @throws IOException                  Thrown for problems connecting to the IDS. Check IDS URL.
+     * @throws NotImplementedException      This method has not been implemented on the IDS.
+     * @throws InternalServerErrorException Something has gone wrong. Check IDS server logs.
+     * @throws ForbiddenException           The request has been refused using sessionId. Check not expired.
      */
     public String prepareData(String sessionId, List<Long> investigationIds, List<Long> datasetIds,
-            List<Long> datafileIds, Boolean compress, Boolean zip) throws IDSException, IOException {
+            List<Long> datafileIds, Boolean compress, Boolean zip) throws IOException,
+            InternalServerErrorException, NotImplementedException, ForbiddenException {
         Map<String, String> parameters = new HashMap<String, String>();
 
         // create parameter list
@@ -72,39 +89,56 @@ public class Client {
         if (zip != null)
             parameters.put("zip", zip.toString());
 
-        Response response = HTTPConnect("POST", "prepareData", parameters);
+        // get response from the IDS, catch exceptions that will not occur with this call
+        Response response = null;
+        try {
+            response = HTTPConnect("POST", "prepareData", parameters);
+        } catch (BadRequestException e) {
+        } catch (NotFoundException e) {
+        } catch (InsufficientStorageException e) {}
+        
         return response.getResponse().toString().trim();
     }
 
     /**
      * Shortcut function for preparedData. Only accepts list of dataset IDs.
      * 
-     * @param sessionId     An ICAT session ID
-     * @param datasetIds    A list of dataset IDs
-     * @param compress      Compress ZIP archive of files (dependent on ZIP parameter below) (optional)
-     * @param zip           Request data to be packaged in a ZIP archive (optional)
-     * @return              A preparedId for the download request
-     * @throws IDSException Thrown for problems with IDS request
-     * @throws IOException  Thrown for problems connecting to the IDS
+     * @param sessionId  An ICAT session ID
+     * @param datasetIds A list of dataset IDs
+     * @param compress   Compress ZIP archive of files (dependent on ZIP parameter below) (optional)
+     * @param zip        Request data to be packaged in a ZIP archive (optional)
+     * 
+     * @return A preparedId for the download request
+     * 
+     * @throws IOException                  Thrown for problems connecting to the IDS. Check IDS URL.
+     * @throws InternalServerErrorException Something has gone wrong. Check IDS server logs.
+     * @throws NotImplementedException      This method has not been implemented on the IDS.
+     * @throws ForbiddenException           The request has been refused using sessionId. Check not expired.
      */
-    public String prepareDatafiles(String sessionId, List<Long> datasetIds, Boolean compress,
-            Boolean zip) throws IDSException, IOException {
+    public String prepareDatasets(String sessionId, List<Long> datasetIds, Boolean compress,
+            Boolean zip) throws IOException, InternalServerErrorException, NotImplementedException,
+            ForbiddenException {
         return prepareData(sessionId, null, datasetIds, null, compress, zip);
     }
 
     /**
      * Shortcut function for preparedData. Only accepts list of datafile IDs.
      * 
-     * @param sessionId     An ICAT session ID
-     * @param datafileIds   A list of datafile IDs
-     * @param compress      Compress ZIP archive of files (dependent on ZIP parameter below) (optional)
-     * @param zip           Request data to be packaged in a ZIP archive (optional)
-     * @return              A preparedId for the download request
-     * @throws IDSException Thrown for problems with IDS request
-     * @throws IOException  Thrown for problems connecting to the IDS
+     * @param sessionId   An ICAT session ID
+     * @param datafileIds A list of datafile IDs
+     * @param compress    Compress ZIP archive of files (dependent on ZIP parameter below) (optional)
+     * @param zip         Request data to be packaged in a ZIP archive (optional)
+     * 
+     * @return A preparedId for the download request
+     * 
+     * @throws IOException                  Thrown for problems connecting to the IDS. Check IDS URL.
+     * @throws InternalServerErrorException Something has gone wrong. Check IDS server logs.
+     * @throws NotImplementedException      This method has not been implemented on the IDS.
+     * @throws ForbiddenException           The request has been refused using sessionId. Check not expired.
      */
-    public String prepareDatasets(String sessionId, List<Long> datafileIds, Boolean compress,
-            Boolean zip) throws IDSException, IOException {
+    public String prepareDatafiles(String sessionId, List<Long> datafileIds, Boolean compress,
+            Boolean zip) throws IOException, InternalServerErrorException, NotImplementedException,
+            ForbiddenException {
         return prepareData(sessionId, null, null, datafileIds, compress, zip);
 
     }
@@ -112,30 +146,50 @@ public class Client {
     /**
      * Sends a request to get the status of a download request.
      * 
-     * @param preparedId    The ID of the download request
-     * @return              Current status of the download request (ONLINE, IMCOMPLETE, RESTORING, ARCHIVED)
-     * @throws IDSException Thrown for problems with IDS request
-     * @throws IOException  Thrown for problems connecting to the IDS
+     * @param preparedId The ID of the download request
+     * 
+     * @return Current status of the download request (ONLINE, IMCOMPLETE, RESTORING)
+     * 
+     * @throws IOException                  Thrown for problems connecting to the IDS. Check IDS URL.
+     * @throws NotImplementedException      This method has not been implemented on the IDS.
+     * @throws InternalServerErrorException Something has gone wrong. Check IDS server logs.
+     * @throws NotFoundException            preparedId not found. Request may have expired.
+     * @throws ForbiddenException           The request has been refused using sessionId. Check not expired.
      */
-    public String getStatus(String preparedId) throws IDSException, IOException {
+    public Status getStatus(String preparedId) throws IOException, ForbiddenException,
+            NotFoundException, InternalServerErrorException, NotImplementedException {
         Map<String, String> parameters = new HashMap<String, String>();
         parameters.put("preparedId", preparedId);
-        Response response = HTTPConnect("GET", "getStatus", parameters);
-        return response.getResponse().toString().trim();
+        
+        // get response from the IDS, catch exceptions that will not occur with this call
+        Response response = null;
+        try {
+            response = HTTPConnect("GET", "getStatus", parameters);
+        } catch (BadRequestException e) {
+        } catch (InsufficientStorageException e) {}
+        
+        return Status.valueOf(response.getResponse().toString().trim());
     }
 
     /**
-     * Download the data for a download request. Returns an instance of the IDS Response class that contains
-     * a OutputStream of data from the IDS and the HTTP header information.
+     * Download the data for a download request. Returns an instance of the IDS Response class that
+     * contains a OutputStream of data from the IDS and the HTTP header information.
      * 
-     * @param preparedId    The ID of the download request
-     * @param outname       The desired filename for the download (optional)
-     * @param offset        The desired offset of the file (optional)
-     * @return              An instance of the IDS Response class
-     * @throws IDSException Thrown for problems with IDS request
-     * @throws IOException  Thrown for problems connecting to the IDS
+     * @param preparedId The ID of the download request
+     * @param outname    The desired filename for the download (optional)
+     * @param offset     The desired offset of the file (optional)
+     * 
+     * @return An instance of the IDS Response class
+     * 
+     * @throws IOException                  Thrown for problems connecting to the IDS. Check IDS URL.
+     * @throws NotImplementedException      This method has not been implemented on the IDS.
+     * @throws InternalServerErrorException Something has gone wrong. Check IDS server logs.
+     * @throws NotFoundException            preparedId not found. Request may have expired.
+     * @throws ForbiddenException           The request has been refused using sessionId. Check not expired.
      */
-    public Response getData(String preparedId, String outname, Long offset) throws IOException, IDSException {
+    public Response getData(String preparedId, String outname, Long offset) throws IOException,
+            ForbiddenException, NotFoundException, InternalServerErrorException,
+            NotImplementedException {
         Map<String, String> parameters = new HashMap<String, String>();
 
         // create parameter list
@@ -145,7 +199,45 @@ public class Client {
         if (offset != null)
             parameters.put("offset", offset.toString());
 
-        return HTTPConnect("GET", "getData", parameters);
+        // get response from the IDS, catch exceptions that will not occur with this call
+        Response response = null;
+        try {
+            response = HTTPConnect("GET", "getData", parameters);
+        } catch (BadRequestException e) {
+        } catch (InsufficientStorageException e) {}
+        
+        return response;
+    }
+
+    /**
+     * Returns the URL from which you can download requested data from.
+     * 
+     * @param preparedId The ID of the download request
+     * @param outname    The desired filename for the download (optional)
+     * 
+     * @return The URL from which you can download requested data from
+     * 
+     * @throws UnsupportedEncodingException Check for non UTF-8 characters.
+     */
+    public String getDataUrl(String preparedId, String outname) throws UnsupportedEncodingException {
+        Map<String, String> parameters = new HashMap<String, String>();
+
+        // create parameter list
+        parameters.put("preparedId", preparedId);
+        if (outname != null)
+            parameters.put("outname", outname);
+
+        StringBuilder url = new StringBuilder();
+
+        // construct url
+        url.append(idsUrl);
+        if (idsUrl.toString().charAt(idsUrl.toString().length() - 1) != '/') {
+            url.append("/");
+        }
+        url.append("getData?");
+        url.append(parametersToString(parameters));
+
+        return url.toString();
     }
 
     /**
@@ -155,11 +247,16 @@ public class Client {
      * @param investigationIds A list of investigation IDs (optional)
      * @param datasetIds       A list of dataset IDs (optional)
      * @param datafileIds      A list of datafile IDs (optional)
-     * @throws IDSException    Thrown for problems with IDS request
-     * @throws IOException     Thrown for problems connecting to the IDS
+     * 
+     * @throws IOException                  Thrown for problems connecting to the IDS. Check IDS URL.
+     * @throws NotImplementedException      This method has not been implemented on the IDS.
+     * @throws InternalServerErrorException Something has gone wrong. Check IDS server logs.
+     * @throws NotFoundException            preparedId not found. Request may have expired.
+     * @throws ForbiddenException           The request has been refused using sessionId. Check not expired.
      */
     public void archive(String sessionId, List<Long> investigationIds, List<Long> datasetIds,
-            List<Long> datafileIds) throws IOException {
+            List<Long> datafileIds) throws IOException, ForbiddenException, NotFoundException,
+            InternalServerErrorException, NotImplementedException {
         Map<String, String> parameters = new HashMap<String, String>();
 
         // create parameter list
@@ -171,21 +268,33 @@ public class Client {
         if (datafileIds != null)
             parameters.put("datafileIds", idListToString(datafileIds));
 
-        Response response = HTTPConnect("POST", "archive", parameters);
+        // get response from the IDS, catch exceptions that will not occur with this call
+        Response response = null;
+        try {
+            response = HTTPConnect("POST", "archive", parameters);
+        } catch (BadRequestException e) {
+        } catch (InsufficientStorageException e) {}
+        
         response.getResponse().toString().trim();
     }
-      
+
     /*
      * Create HTTP request of type defined by method to 'page' defined by relativeURL. Converts
      * parameter list into format suitable for either URL (GET,DELETE) or message body (POST).
      */
     protected Response HTTPConnect(String method, String relativeUrl, Map<String, String> parameters)
-            throws IOException, IDSException {
+            throws IOException, BadRequestException, ForbiddenException, NotFoundException,
+            InternalServerErrorException, NotImplementedException, InsufficientStorageException {
         StringBuilder url = new StringBuilder();
         HttpURLConnection connection;
 
         // construct url
         url.append(idsUrl);
+
+        // check if idsURL ends with a /
+        if (idsUrl.toString().charAt(idsUrl.toString().length() - 1) != '/') {
+            url.append("/");
+        }
         url.append(relativeUrl);
 
         // add parameters to url for GET and DELETE requests
@@ -217,19 +326,24 @@ public class Client {
         }
 
         // read in response
-        InputStream in = null;
+        InputStream is = null;
         ByteArrayOutputStream os = null;
         try {
             os = new ByteArrayOutputStream();
             if (connection.getResponseCode() != 200) {
-                in = connection.getErrorStream();
+                is = connection.getErrorStream();
             } else {
-                in = connection.getInputStream();
+                is = connection.getInputStream();
             }
-            IOUtils.copy(in, os);
+
+            int len;
+            byte[] buffer = new byte[1024];
+            while ((len = is.read(buffer)) != -1) {
+                os.write(buffer, 0, len);
+            }
         } finally {
-            if (in != null) {
-                in.close();
+            if (is != null) {
+                is.close();
             }
             if (os != null) {
                 os.close();
@@ -253,8 +367,8 @@ public class Client {
             case 507:
                 throw new InsufficientStorageException(os.toString());
             default:
-                throw new IDSException("Unknown response " + connection.getResponseCode() + ": "
-                        + os.toString());
+                throw new InternalServerErrorException("Unknown response "
+                        + connection.getResponseCode() + ": " + os.toString());
         }
 
         connection.disconnect();
@@ -263,7 +377,8 @@ public class Client {
     }
 
     /*
-     * Turn a list of key-value pairs into format suitable for HTTP GET request ie. key=value&key=value
+     * Turn a list of key-value pairs into format suitable for HTTP GET request ie.
+     * key=value&key=value
      */
     private String parametersToString(Map<String, String> parameters)
             throws UnsupportedEncodingException {
