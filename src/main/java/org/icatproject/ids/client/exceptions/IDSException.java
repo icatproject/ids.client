@@ -1,4 +1,4 @@
-package org.icatproject.idsclient.exceptions;
+package org.icatproject.ids.client.exceptions;
 
 @SuppressWarnings("serial")
 public class IDSException extends Exception
