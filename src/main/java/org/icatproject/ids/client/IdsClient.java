@@ -28,7 +28,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class IdsClient {
 
 	public enum Flag {
-		COMPRESS, NONE, ZIP, ZIP_AND_COMPRESS
+		/**
+		 * Apply compression if the file or files are zipped.
+		 */
+		COMPRESS,
+
+		/**
+		 * No zipping when a single data file is requested and no compression.
+		 */
+		NONE,
+
+		/**
+		 * Also zip when a single data file is requested.
+		 */
+		ZIP,
+
+		/**
+		 * Compress and also zip when a single data file is requested.
+		 */
+		ZIP_AND_COMPRESS
 	}
 
 	private enum Method {
@@ -40,7 +58,26 @@ public class IdsClient {
 	};
 
 	public enum Status {
-		ARCHIVED, INCOMPLETE, ONLINE, RESTORING
+		/**
+		 * When some or all of the requested data are not on line
+		 */
+		ARCHIVED,
+
+		/**
+		 * When data are requested but some data are no longer available when the prepareData task
+		 * is run.
+		 */
+		INCOMPLETE,
+
+		/**
+		 * All requested data are on line.
+		 */
+		ONLINE,
+
+		/**
+		 * Restoration has been requested but not all requested data are yet online.
+		 */
+		RESTORING
 	};
 
 	private static String getOutput(HttpURLConnection urlc) throws InternalException {
@@ -89,12 +126,13 @@ public class IdsClient {
 	}
 
 	/**
-	 * Archive specified data
+	 * Archive data specified by the dataSelection.
 	 * 
 	 * @param sessionId
 	 *            A valid ICAT session ID
 	 * @param dataSelection
 	 *            A data selection object that must not be empty
+	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
 	 * @throws InsufficientPrivilegesException
@@ -110,7 +148,7 @@ public class IdsClient {
 		parameters.putAll(dataSelection.getParameters());
 
 		try {
-			process("archive", parameters, Method.POST, ParmPos.BODY, null);
+			process("archive", parameters, Method.POST, ParmPos.BODY, null, null);
 		} catch (InsufficientStorageException | DataNotOnlineException e) {
 			throw new InternalException("Unexpected exception " + e.getClass() + " "
 					+ e.getMessage());
@@ -118,10 +156,13 @@ public class IdsClient {
 	}
 
 	/**
+	 * Delete data specified by the dataSelection.
+	 * 
 	 * @param sessionId
 	 *            A valid ICAT session ID
 	 * @param dataSelection
 	 *            A data selection object that must not be empty
+	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
 	 * @throws InsufficientPrivilegesException
@@ -137,7 +178,7 @@ public class IdsClient {
 		parameters.putAll(dataSelection.getParameters());
 
 		try {
-			process("delete", parameters, Method.DELETE, ParmPos.URL, null);
+			process("delete", parameters, Method.DELETE, ParmPos.URL, null, null);
 		} catch (InsufficientStorageException | DataNotOnlineException e) {
 			throw new InternalException("Unexpected exception " + e.getClass() + " "
 					+ e.getMessage());
@@ -146,14 +187,22 @@ public class IdsClient {
 	}
 
 	/**
+	 * Get the data specified by the dataSelection.
+	 * 
 	 * @param sessionId
 	 *            A valid ICAT session ID
 	 * @param dataSelection
 	 *            A data selection object that must not be empty
 	 * @param flags
+	 *            To select packing options
 	 * @param outname
+	 *            The name of the file. If it is in .zip format the .zip extension will be added if
+	 *            not present.
 	 * @param offset
+	 *            Skip this number of bytes in the returned stream
+	 * 
 	 * @return an InputStream to allow the data to be read
+	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
 	 * @throws InsufficientPrivilegesException
@@ -177,12 +226,14 @@ public class IdsClient {
 		if (outname != null) {
 			parameters.put("outname", outname);
 		}
+		Map<String, String> headers = null;
 		if (offset != 0) {
-			parameters.put("offset", Long.toString(offset));
+			headers = new HashMap<>();
+			headers.put("Range", "bytes=" + offset + "-");
 		}
 		HttpURLConnection urlc;
 		try {
-			urlc = process("getData", parameters, Method.GET, ParmPos.URL, null);
+			urlc = process("getData", parameters, Method.GET, ParmPos.URL, headers, null);
 		} catch (InsufficientStorageException e) {
 			throw new InternalException("Unexpected exception " + e.getClass() + " "
 					+ e.getMessage());
@@ -194,9 +245,16 @@ public class IdsClient {
 
 	/**
 	 * @param preparedId
+	 *            A valid preparedId returned by a call to prepareData
+	 * 
 	 * @param outname
+	 *            The name of the file. If it is in .zip format the .zip extension will be added if
+	 *            not present.
 	 * @param offset
-	 * @return
+	 *            Skip this number of bytes in the returned stream
+	 * 
+	 * @return an InputStream to allow the data to be read
+	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
 	 * @throws InsufficientPrivilegesException
@@ -213,12 +271,14 @@ public class IdsClient {
 		if (outname != null) {
 			parameters.put("outname", outname);
 		}
+		Map<String, String> headers = null;
 		if (offset != 0) {
-			parameters.put("offset", Long.toString(offset));
+			headers = new HashMap<>();
+			headers.put("Range", "bytes=" + offset + "-");
 		}
 		HttpURLConnection urlc;
 		try {
-			urlc = process("getData", parameters, Method.GET, ParmPos.URL, null);
+			urlc = process("getData", parameters, Method.GET, ParmPos.URL, headers, null);
 		} catch (InsufficientStorageException e) {
 			throw new InternalException("Unexpected exception " + e.getClass() + " "
 					+ e.getMessage());
@@ -228,8 +288,12 @@ public class IdsClient {
 	}
 
 	/**
+	 * Return the status of the prepareData call specified by the prepareId
+	 * 
 	 * @param preparedId
-	 * @return
+	 * 
+	 * @return the status
+	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
 	 * @throws InsufficientPrivilegesException
@@ -243,7 +307,7 @@ public class IdsClient {
 
 		HttpURLConnection urlc;
 		try {
-			urlc = process("getStatus", parameters, Method.GET, ParmPos.URL, null);
+			urlc = process("getStatus", parameters, Method.GET, ParmPos.URL, null, null);
 		} catch (InsufficientStorageException | DataNotOnlineException e) {
 			throw new InternalException("Unexpected exception " + e.getClass() + " "
 					+ e.getMessage());
@@ -253,26 +317,32 @@ public class IdsClient {
 	}
 
 	/**
+	 * Return the status of the data specified by the dataSelection.
+	 * 
 	 * @param sessionId
-	 * @param data
-	 * @return
+	 *            A valid ICAT session ID
+	 * @param dataSelection
+	 *            A data selection object that must not be empty
+	 * 
+	 * @return the status
+	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
 	 * @throws InsufficientPrivilegesException
 	 * @throws NotFoundException
 	 * @throws InternalException
 	 */
-	public Status getStatus(String sessionId, DataSelection data) throws NotImplementedException,
-			BadRequestException, InsufficientPrivilegesException, NotFoundException,
-			InternalException {
+	public Status getStatus(String sessionId, DataSelection dataSelection)
+			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
+			NotFoundException, InternalException {
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(data.getParameters());
+		parameters.putAll(dataSelection.getParameters());
 
 		HttpURLConnection urlc;
 
 		try {
-			urlc = process("getStatus", parameters, Method.GET, ParmPos.URL, null);
+			urlc = process("getStatus", parameters, Method.GET, ParmPos.URL, null, null);
 		} catch (InsufficientStorageException | DataNotOnlineException e) {
 			throw new InternalException("Unexpected exception " + e.getClass() + " "
 					+ e.getMessage());
@@ -290,22 +360,53 @@ public class IdsClient {
 	}
 
 	/**
+	 * Check that the server is alive and is an IDS server
+	 * 
+	 * @throws InternalException
+	 * @throws NotFoundException
+	 *             If the server gives an unexpected response
+	 */
+	public void ping() throws InternalException, NotFoundException {
+		Map<String, String> emptyMap = Collections.emptyMap();
+		HttpURLConnection urlc;
+		try {
+			urlc = process("ping", emptyMap, Method.GET, ParmPos.URL, null, null);
+		} catch (InsufficientStorageException | DataNotOnlineException | InternalException
+				| BadRequestException | InsufficientPrivilegesException | NotFoundException
+				| NotImplementedException e) {
+			throw new InternalException("Unexpected exception " + e.getClass() + " "
+					+ e.getMessage());
+		}
+		String result = getOutput(urlc);
+		if (!result.equals("IdsOK")) {
+			throw new NotFoundException("Server gave invalid response: " + result);
+		}
+	}
+
+	/**
+	 * Prepare data for a subsequent getData call.
+	 * 
 	 * @param sessionId
-	 * @param data
+	 *            A valid ICAT session ID
+	 * @param dataSelection
+	 *            A data selection object that must not be empty
 	 * @param flags
-	 * @return
+	 *            To select packing options
+	 * 
+	 * @return a prepareId to be used in calls to getData and getStatus
+	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
 	 * @throws InsufficientPrivilegesException
 	 * @throws NotFoundException
 	 * @throws InternalException
 	 */
-	public String prepareData(String sessionId, DataSelection data, Flag flags)
+	public String prepareData(String sessionId, DataSelection dataSelection, Flag flags)
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
 			NotFoundException, InternalException {
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(data.getParameters());
+		parameters.putAll(dataSelection.getParameters());
 		if (flags == Flag.ZIP || flags == Flag.ZIP_AND_COMPRESS) {
 			parameters.put("zip", "true");
 		}
@@ -314,7 +415,7 @@ public class IdsClient {
 		}
 		HttpURLConnection urlc;
 		try {
-			urlc = process("prepareData", parameters, Method.POST, ParmPos.BODY, null);
+			urlc = process("prepareData", parameters, Method.POST, ParmPos.BODY, null, null);
 		} catch (InsufficientStorageException | DataNotOnlineException e) {
 			throw new InternalException("Unexpected exception " + e.getClass() + " "
 					+ e.getMessage());
@@ -322,25 +423,11 @@ public class IdsClient {
 		return getOutput(urlc);
 	}
 
-	/**
-	 * @param relativeUrl
-	 * @param parameters
-	 * @param method
-	 * @param parmPos
-	 * @param inputStream
-	 * @return
-	 * @throws InternalException
-	 * @throws BadRequestException
-	 * @throws InsufficientPrivilegesException
-	 * @throws InsufficientStorageException
-	 * @throws NotFoundException
-	 * @throws NotImplementedException
-	 * @throws DataNotOnlineException
-	 */
-	public HttpURLConnection process(String relativeUrl, Map<String, String> parameters,
-			Method method, ParmPos parmPos, InputStream inputStream) throws InternalException,
-			BadRequestException, InsufficientPrivilegesException, InsufficientStorageException,
-			NotFoundException, NotImplementedException, DataNotOnlineException {
+	private HttpURLConnection process(String relativeUrl, Map<String, String> parameters,
+			Method method, ParmPos parmPos, Map<String, String> headers, InputStream inputStream)
+			throws InternalException, BadRequestException, InsufficientPrivilegesException,
+			InsufficientStorageException, NotFoundException, NotImplementedException,
+			DataNotOnlineException {
 		HttpURLConnection urlc;
 		int rc;
 		try {
@@ -372,6 +459,12 @@ public class IdsClient {
 
 			urlc.setUseCaches(false);
 			urlc.setRequestMethod(method.name());
+
+			if (headers != null) {
+				for (Entry<String, String> entry : headers.entrySet()) {
+					urlc.setRequestProperty(entry.getKey(), entry.getValue());
+				}
+			}
 
 			if (parmPos == ParmPos.BODY && parms != null) {
 
@@ -484,13 +577,23 @@ public class IdsClient {
 	}
 
 	/**
+	 * Put the data in the inputStream into a data file and catalogue it.
+	 * 
 	 * @param sessionId
-	 * @param file
+	 *            A valid ICAT session ID
+	 * @param inputStream
+	 *            the input stream providing the data to store
 	 * @param name
+	 *            the name to associate with the data file
 	 * @param datasetId
+	 *            the id of the ICAT "Dataset" which should own the data file
 	 * @param datafileFormatId
+	 *            the id of the ICAT "DatafileForat" to be associated with the data file
 	 * @param description
-	 * @return
+	 *            Free text to associate with the data file (may be null)
+	 * 
+	 * @return the ICAT id of the "Datafile" object created
+	 * 
 	 * @throws BadRequestException
 	 * @throws NotFoundException
 	 * @throws InternalException
@@ -499,25 +602,41 @@ public class IdsClient {
 	 * @throws DataNotOnlineException
 	 * @throws InsufficientStorageException
 	 */
-	public Long put(String sessionId, File file, String name, long datasetId,
+	public Long put(String sessionId, InputStream inputStream, String name, long datasetId,
 			long datafileFormatId, String description) throws BadRequestException,
 			NotFoundException, InternalException, InsufficientPrivilegesException,
 			NotImplementedException, DataNotOnlineException, InsufficientStorageException {
-		return put(sessionId, file, name, datasetId, datafileFormatId, description, null, null,
-				null);
+		return put(sessionId, inputStream, name, datasetId, datafileFormatId, description, null,
+				null, null);
 	}
 
 	/**
+	 * Put the data in the inputStream into a data file and catalogue it.
+	 * 
 	 * @param sessionId
-	 * @param file
+	 *            A valid ICAT session ID
+	 * @param inputStream
+	 *            the input stream providing the data to store
 	 * @param name
+	 *            the name to associate with the data file
 	 * @param datasetId
+	 *            the id of the ICAT "Dataset" which should own the data file
 	 * @param datafileFormatId
+	 *            the id of the ICAT "DatafileForat" to be associated with the data file
 	 * @param description
+	 *            Free text to associate with the data file. (may be null)
 	 * @param doi
+	 *            The Digital Object Identifier to associate with the data file. (may be null)
 	 * @param datafileCreateTime
+	 *            the time to record as the creation time of the datafile. If null the current time
+	 *            as known to the IDS server will be stored.
 	 * @param datafileModTime
-	 * @return
+	 *            the time to record as the modification time of the datafile. If null the value of
+	 *            the datafileCreateTime or the current time as known to the IDS server if that
+	 *            value is also null will be stored.
+	 * 
+	 * @return the ICAT id of the "Datafile" object created.
+	 * 
 	 * @throws BadRequestException
 	 * @throws NotFoundException
 	 * @throws InternalException
@@ -526,26 +645,7 @@ public class IdsClient {
 	 * @throws DataNotOnlineException
 	 * @throws InsufficientStorageException
 	 */
-	/**
-	 * @param sessionId
-	 * @param file
-	 * @param name
-	 * @param datasetId
-	 * @param datafileFormatId
-	 * @param description
-	 * @param doi
-	 * @param datafileCreateTime
-	 * @param datafileModTime
-	 * @return
-	 * @throws BadRequestException
-	 * @throws NotFoundException
-	 * @throws InternalException
-	 * @throws InsufficientPrivilegesException
-	 * @throws NotImplementedException
-	 * @throws DataNotOnlineException
-	 * @throws InsufficientStorageException
-	 */
-	public Long put(String sessionId, File file, String name, long datasetId,
+	public Long put(String sessionId, InputStream inputStream, String name, long datasetId,
 			long datafileFormatId, String description, String doi, Date datafileCreateTime,
 			Date datafileModTime) throws BadRequestException, NotFoundException, InternalException,
 			InsufficientPrivilegesException, NotImplementedException, DataNotOnlineException,
@@ -570,11 +670,9 @@ public class IdsClient {
 		}
 
 		try {
-			HttpURLConnection urlc = process("put", parameters, Method.PUT, ParmPos.URL,
-					new FileInputStream(file));
+			HttpURLConnection urlc = process("put", parameters, Method.PUT, ParmPos.URL, null,
+					inputStream);
 			return Long.parseLong(getOutput(urlc));
-		} catch (FileNotFoundException e) {
-			throw new NotFoundException("File " + file.getAbsolutePath() + " does not exist");
 		} catch (NumberFormatException e) {
 			throw new InternalException("Web service call did not return a valid Long value");
 		}
@@ -582,8 +680,13 @@ public class IdsClient {
 	}
 
 	/**
+	 * Restore data specified by the dataSelection.
+	 * 
 	 * @param sessionId
-	 * @param data
+	 *            A valid ICAT session ID
+	 * @param dataSelection
+	 *            A data selection object that must not be empty
+	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
 	 * @throws InsufficientPrivilegesException
@@ -599,34 +702,10 @@ public class IdsClient {
 		parameters.putAll(data.getParameters());
 
 		try {
-			process("restore", parameters, Method.POST, ParmPos.BODY, null);
+			process("restore", parameters, Method.POST, ParmPos.BODY, null, null);
 		} catch (InsufficientStorageException | DataNotOnlineException e) {
 			throw new InternalException("Unexpected exception " + e.getClass() + " "
 					+ e.getMessage());
-		}
-	}
-
-	/**
-	 * Check that the server is alive and is an IDS server
-	 * 
-	 * @throws InternalException
-	 * @throws NotFoundException
-	 *             If the server gives an unexpected response
-	 */
-	public void ping() throws InternalException, NotFoundException {
-		Map<String, String> emptyMap = Collections.emptyMap();
-		HttpURLConnection urlc;
-		try {
-			urlc = process("ping", emptyMap, Method.GET, ParmPos.URL, null);
-		} catch (InsufficientStorageException | DataNotOnlineException | InternalException
-				| BadRequestException | InsufficientPrivilegesException | NotFoundException
-				| NotImplementedException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
-		}
-		String result = getOutput(urlc);
-		if (!result.equals("IdsOK")) {
-			throw new NotFoundException("Server gave invalid response: " + result);
 		}
 	}
 

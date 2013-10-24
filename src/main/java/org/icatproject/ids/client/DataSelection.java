@@ -8,7 +8,6 @@ import java.util.Set;
 
 /**
  * To build set of data to be processed by the IDS.
- * 
  */
 public class DataSelection {
 
@@ -18,28 +17,58 @@ public class DataSelection {
 
 	private Set<Long> investigationIds = new HashSet<>();
 
-	public DataSelection addDatafile(Long id) {
-		datafileIds.add(id);
+	/**
+	 * @param datafileId
+	 * @return itself to allow chaining of addXXX calls
+	 */
+	public DataSelection addDatafile(long datafileId) {
+		datafileIds.add(datafileId);
 		return this;
 	}
 
-	public DataSelection addDatafiles(List<Long> ids) {
-		datafileIds.addAll(ids);
+	/**
+	 * @param datafileIds
+	 * @return itself to allow chaining of addXXX calls
+	 */
+	public DataSelection addDatafiles(List<Long> datafileIds) {
+		datafileIds.addAll(datafileIds);
 		return this;
 	}
 
-	public DataSelection addDatasets(List<Long> ids) {
-		datasetIds.addAll(ids);
+	/**
+	 * @param datasetId
+	 * @return itself to allow chaining of addXXX calls
+	 */
+	public DataSelection addDataset(long datasetId) {
+		datasetIds.add(datasetId);
 		return this;
 	}
 
-	public DataSelection addDataset(Long id) {
-		datasetIds.add(id);
+	/**
+	 * @param datasetIds
+	 * @return itself to allow chaining of addXXX calls
+	 */
+	public DataSelection addDatasets(List<Long> datasetIds) {
+		datasetIds.addAll(datasetIds);
 		return this;
 	}
 
-	public void addInvestigation(long invId) {
-		investigationIds.add(invId);
+	/**
+	 * @param investigationId
+	 * @return itself to allow chaining of addXXX calls
+	 */
+	public DataSelection addInvestigation(long investigationId) {
+		investigationIds.add(investigationId);
+		return this;
+	}
+
+	/**
+	 * @param investigationIds
+	 * @return itself to allow chaining of addXXX calls
+	 */
+	public DataSelection addInvestigations(List<Long> investigationIds) {
+		investigationIds.addAll(investigationIds);
+		return this;
 	}
 
 	public Map<String, String> getParameters() {
