@@ -27,6 +27,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class IdsClient {
 
+	/**
+	 * Defines packaging options
+	 */
 	public enum Flag {
 		/**
 		 * Apply compression if the file or files are zipped.
@@ -57,6 +60,9 @@ public class IdsClient {
 		BODY, URL
 	};
 
+	/**
+	 * Values to be returned by the {@code getStatus()} calls.
+	 */
 	public enum Status {
 		/**
 		 * When some or all of the requested data are not on line
@@ -72,6 +78,7 @@ public class IdsClient {
 		/**
 		 * All requested data are on line.
 		 */
+
 		ONLINE,
 
 		/**
@@ -210,13 +217,13 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws DataNotOnlineException
 	 */
-	public InputStream getData(String sessionId, DataSelection data, Flag flags, String outname,
-			long offset) throws NotImplementedException, BadRequestException,
+	public InputStream getData(String sessionId, DataSelection dataSelection, Flag flags,
+			String outname, long offset) throws NotImplementedException, BadRequestException,
 			InsufficientPrivilegesException, NotFoundException, InternalException,
 			DataNotOnlineException {
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(data.getParameters());
+		parameters.putAll(dataSelection.getParameters());
 		if (flags == Flag.ZIP || flags == Flag.ZIP_AND_COMPRESS) {
 			parameters.put("zip", "true");
 		}
@@ -693,13 +700,13 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws NotFoundException
 	 */
-	public void restore(String sessionId, DataSelection data) throws NotImplementedException,
-			BadRequestException, InsufficientPrivilegesException, InternalException,
-			NotFoundException {
+	public void restore(String sessionId, DataSelection dataSelection)
+			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
+			InternalException, NotFoundException {
 
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(data.getParameters());
+		parameters.putAll(dataSelection.getParameters());
 
 		try {
 			process("restore", parameters, Method.POST, ParmPos.BODY, null, null);
