@@ -172,10 +172,11 @@ public class IdsClient {
 	 * @throws InsufficientPrivilegesException
 	 * @throws InternalException
 	 * @throws NotFoundException
+	 * @throws DataNotOnlineException 
 	 */
 	public void delete(String sessionId, DataSelection dataSelection)
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
-			InternalException, NotFoundException {
+			InternalException, NotFoundException, DataNotOnlineException {
 
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
@@ -183,7 +184,7 @@ public class IdsClient {
 
 		try {
 			process("delete", parameters, Method.DELETE, ParmPos.URL, null, null);
-		} catch (InsufficientStorageException | DataNotOnlineException e) {
+		} catch (InsufficientStorageException e) {
 			throw new InternalException("Unexpected exception " + e.getClass() + " "
 					+ e.getMessage());
 		}
