@@ -67,12 +67,6 @@ public class IdsClient {
 		ARCHIVED,
 
 		/**
-		 * When data are requested but some data are no longer available when the prepareData task
-		 * is run.
-		 */
-		INCOMPLETE,
-
-		/**
 		 * All requested data are on line.
 		 */
 
