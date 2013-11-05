@@ -166,7 +166,7 @@ public class IdsClient {
 	 * @throws InsufficientPrivilegesException
 	 * @throws InternalException
 	 * @throws NotFoundException
-	 * @throws DataNotOnlineException 
+	 * @throws DataNotOnlineException
 	 */
 	public void delete(String sessionId, DataSelection dataSelection)
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
@@ -479,16 +479,6 @@ public class IdsClient {
 			}
 
 			if (inputStream != null) {
-				OutputStream os = null;
-				try {
-					os = urlc.getOutputStream();
-					os.write(parms.getBytes());
-				} finally {
-					if (os != null) {
-						os.close();
-					}
-				}
-
 				BufferedOutputStream bos = null;
 				BufferedInputStream bis = null;
 				try {
