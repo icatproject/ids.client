@@ -62,7 +62,7 @@ public class IdsClient {
 	 */
 	public enum Status {
 		/**
-		 * When some or all of the requested data are not on line
+		 * When some or all of the requested data are not on line and restoration has not been requested
 		 */
 		ARCHIVED,
 
@@ -73,7 +73,7 @@ public class IdsClient {
 		ONLINE,
 
 		/**
-		 * Restoration has been requested but not all requested data are yet online.
+		 * When some or all of the requested data are not on line but otherwise restoration has  been requested.
 		 */
 		RESTORING
 	};
