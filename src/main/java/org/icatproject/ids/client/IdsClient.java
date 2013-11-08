@@ -18,6 +18,8 @@ import java.util.Map.Entry;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Client to communicate with IDS server
@@ -58,11 +60,48 @@ public class IdsClient {
 	};
 
 	/**
+	 * Returned by the getServiceStatus call
+	 */
+	public class ServiceStatus {
+
+		private Map<String, String> opItems = new HashMap<>();
+		private Map<String, String> prepItems = new HashMap<>();
+
+		/**
+		 * Return a map from a description of a data set to the requested state.
+		 * 
+		 * @return map
+		 */
+		public Map<String, String> getOpItems() {
+			return opItems;
+		}
+
+		/**
+		 * Return a map from a preparedId to the state of the preparer.
+		 * 
+		 * @return map
+		 */
+		public Map<String, String> getPrepItems() {
+			return prepItems;
+		}
+
+		void storeOpItems(String dsInfo, String request) {
+			opItems.put(dsInfo, request);
+		}
+
+		void storePrepItems(String id, String state) {
+			prepItems.put(id, state);
+		}
+
+	};
+
+	/**
 	 * Values to be returned by the {@code getStatus()} calls.
 	 */
 	public enum Status {
 		/**
-		 * When some or all of the requested data are not on line and restoration has not been requested
+		 * When some or all of the requested data are not on line and restoration has not been
+		 * requested
 		 */
 		ARCHIVED,
 
@@ -73,7 +112,8 @@ public class IdsClient {
 		ONLINE,
 
 		/**
-		 * When some or all of the requested data are not on line but otherwise restoration has  been requested.
+		 * When some or all of the requested data are not on line but otherwise restoration has been
+		 * requested.
 		 */
 		RESTORING
 	};
@@ -137,13 +177,13 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws NotFoundException
 	 */
-	public void archive(String sessionId, DataSelection dataSelection)
-			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
-			InternalException, NotFoundException {
+	public void archive(String sessionId, DataSelection data) throws NotImplementedException,
+			BadRequestException, InsufficientPrivilegesException, InternalException,
+			NotFoundException {
 
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
+		parameters.putAll(data.getParameters());
 
 		try {
 			process("archive", parameters, Method.POST, ParmPos.BODY, null, null);
@@ -168,13 +208,13 @@ public class IdsClient {
 	 * @throws NotFoundException
 	 * @throws DataNotOnlineException
 	 */
-	public void delete(String sessionId, DataSelection dataSelection)
-			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
-			InternalException, NotFoundException, DataNotOnlineException {
+	public void delete(String sessionId, DataSelection data) throws NotImplementedException,
+			BadRequestException, InsufficientPrivilegesException, InternalException,
+			NotFoundException, DataNotOnlineException {
 
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
+		parameters.putAll(data.getParameters());
 
 		try {
 			process("delete", parameters, Method.DELETE, ParmPos.URL, null, null);
@@ -209,13 +249,13 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws DataNotOnlineException
 	 */
-	public InputStream getData(String sessionId, DataSelection dataSelection, Flag flags,
-			String outname, long offset) throws NotImplementedException, BadRequestException,
+	public InputStream getData(String sessionId, DataSelection data, Flag flags, String outname,
+			long offset) throws NotImplementedException, BadRequestException,
 			InsufficientPrivilegesException, NotFoundException, InternalException,
 			DataNotOnlineException {
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
+		parameters.putAll(data.getParameters());
 		if (flags == Flag.ZIP || flags == Flag.ZIP_AND_COMPRESS) {
 			parameters.put("zip", "true");
 		}
@@ -225,12 +265,12 @@ public class IdsClient {
 		if (outname != null) {
 			parameters.put("outname", outname);
 		}
+		HttpURLConnection urlc;
 		Map<String, String> headers = null;
 		if (offset != 0) {
 			headers = new HashMap<>();
 			headers.put("Range", "bytes=" + offset + "-");
 		}
-		HttpURLConnection urlc;
 		try {
 			urlc = process("getData", parameters, Method.GET, ParmPos.URL, headers, null);
 		} catch (InsufficientStorageException e) {
@@ -262,20 +302,19 @@ public class IdsClient {
 	 * @throws DataNotOnlineException
 	 */
 	public InputStream getData(String preparedId, String outname, long offset)
-
-	throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
+			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
 			NotFoundException, InternalException, DataNotOnlineException {
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("preparedId", preparedId);
 		if (outname != null) {
 			parameters.put("outname", outname);
 		}
+		HttpURLConnection urlc;
 		Map<String, String> headers = null;
 		if (offset != 0) {
 			headers = new HashMap<>();
 			headers.put("Range", "bytes=" + offset + "-");
 		}
-		HttpURLConnection urlc;
 		try {
 			urlc = process("getData", parameters, Method.GET, ParmPos.URL, headers, null);
 		} catch (InsufficientStorageException e) {
@@ -287,32 +326,51 @@ public class IdsClient {
 	}
 
 	/**
-	 * Return the status of the prepareData call specified by the prepareId
+	 * Return a ServiceStatus object to understand what the IDS is doing.
 	 * 
-	 * @param preparedId
+	 * To use this call, the user represented by the sessionId must be in the set of rootUserNames
+	 * defined in the IDS configuration.
 	 * 
-	 * @return the status
+	 * @param sessionId
+	 *            A valid ICAT session ID of a suer in the IDS rootUserNames set.
 	 * 
-	 * @throws NotImplementedException
-	 * @throws BadRequestException
-	 * @throws InsufficientPrivilegesException
-	 * @throws NotFoundException
+	 * @return a ServiceStatus object
+	 * 
 	 * @throws InternalException
+	 * @throws InsufficientPrivilegesException
 	 */
-	public Status getStatus(String preparedId) throws NotImplementedException, BadRequestException,
-			InsufficientPrivilegesException, NotFoundException, InternalException {
+	public ServiceStatus getServiceStatus(String sessionId) throws InternalException,
+			InsufficientPrivilegesException {
 		Map<String, String> parameters = new HashMap<>();
-		parameters.put("preparedId", preparedId);
-
+		parameters.put("sessionId", sessionId);
 		HttpURLConnection urlc;
 		try {
-			urlc = process("getStatus", parameters, Method.GET, ParmPos.URL, null, null);
-		} catch (InsufficientStorageException | DataNotOnlineException e) {
+			urlc = process("getServiceStatus", parameters, Method.GET, ParmPos.URL, null, null);
+		} catch (InsufficientStorageException | DataNotOnlineException | InternalException
+				| BadRequestException | NotFoundException | NotImplementedException e) {
+			throw new InternalException("Unexpected exception " + e.getClass() + " "
+					+ e.getMessage());
+		}
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			JsonNode rootNode = mapper.readValue(urlc.getInputStream(), JsonNode.class);
+			ServiceStatus serviceStatus = new ServiceStatus();
+			for (JsonNode on : (ArrayNode) rootNode.get("opsQueue")) {
+				String dsInfo = ((ObjectNode) on).get("dsInfo").asText();
+				String request = ((ObjectNode) on).get("request").asText();
+				serviceStatus.storeOpItems(dsInfo, request);
+			}
+			for (JsonNode on : (ArrayNode) rootNode.get("prepQueue")) {
+				String id = ((ObjectNode) on).get("id").asText();
+				String state = ((ObjectNode) on).get("state").asText();
+				serviceStatus.storePrepItems(id, state);
+			}
+			return serviceStatus;
+		} catch (IOException e) {
 			throw new InternalException("Unexpected exception " + e.getClass() + " "
 					+ e.getMessage());
 		}
 
-		return Status.valueOf(getOutput(urlc));
 	}
 
 	/**
@@ -331,12 +389,12 @@ public class IdsClient {
 	 * @throws NotFoundException
 	 * @throws InternalException
 	 */
-	public Status getStatus(String sessionId, DataSelection dataSelection)
-			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
-			NotFoundException, InternalException {
+	public Status getStatus(String sessonId, DataSelection data) throws BadRequestException,
+			NotFoundException, InsufficientPrivilegesException, InternalException,
+			NotImplementedException {
 		Map<String, String> parameters = new HashMap<>();
-		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
+		parameters.put("sessionId", sessonId);
+		parameters.putAll(data.getParameters());
 
 		HttpURLConnection urlc;
 
@@ -356,6 +414,36 @@ public class IdsClient {
 		} catch (IOException e) {
 			throw new InternalException("IOException " + e.getMessage());
 		}
+	}
+
+	/**
+	 * Returns true if the data identified by the preparedId returned by a call to prepareData is
+	 * ready.
+	 * 
+	 * @param preparedId
+	 *            the id returned by a call to prepareData
+	 * 
+	 * @return true if ready otherwise false.
+	 * 
+	 * @throws BadRequestException
+	 * @throws NotFoundException
+	 * @throws InternalException
+	 * @throws NotImplementedException
+	 */
+	public boolean isPrepared(String preparedId) throws BadRequestException, NotFoundException,
+			InternalException, NotImplementedException {
+		Map<String, String> parameters = new HashMap<>();
+		parameters.put("preparedId", preparedId);
+
+		HttpURLConnection urlc;
+		try {
+			urlc = process("isPrepared", parameters, Method.GET, ParmPos.URL, null, null);
+		} catch (InsufficientStorageException | DataNotOnlineException
+				| InsufficientPrivilegesException e) {
+			throw new InternalException("Unexpected exception " + e.getClass() + " "
+					+ e.getMessage());
+		}
+		return Boolean.parseBoolean(getOutput(urlc));
 	}
 
 	/**
@@ -400,12 +488,12 @@ public class IdsClient {
 	 * @throws NotFoundException
 	 * @throws InternalException
 	 */
-	public String prepareData(String sessionId, DataSelection dataSelection, Flag flags)
+	public String prepareData(String sessionId, DataSelection data, Flag flags)
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
 			NotFoundException, InternalException {
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
+		parameters.putAll(data.getParameters());
 		if (flags == Flag.ZIP || flags == Flag.ZIP_AND_COMPRESS) {
 			parameters.put("zip", "true");
 		}
@@ -665,7 +753,6 @@ public class IdsClient {
 		} catch (NumberFormatException e) {
 			throw new InternalException("Web service call did not return a valid Long value");
 		}
-
 	}
 
 	/**
@@ -682,13 +769,13 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws NotFoundException
 	 */
-	public void restore(String sessionId, DataSelection dataSelection)
-			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
-			InternalException, NotFoundException {
+	public void restore(String sessionId, DataSelection data) throws NotImplementedException,
+			BadRequestException, InsufficientPrivilegesException, InternalException,
+			NotFoundException {
 
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
+		parameters.putAll(data.getParameters());
 
 		try {
 			process("restore", parameters, Method.POST, ParmPos.BODY, null, null);
