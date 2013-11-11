@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document xmlns="http://maven.apache.org/XDOC/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+    <properties>
+        <title>ICAT Java Client Installation</title>
+    </properties>
+
+    <body>
+
+        <section name="Installation">
+
+            <subsection name="Manual Installation">
+
+                <p>There is one file that should be made available to those wishing
+                    to use the ICAT client:
+                </p>
+                <dl>
+                    <dt>
+                        <a href="${repoUrl}/org/icatproject/ids.client/${project.version}/ids.client-${project.version}.jar">ids.client-${project.version}.jar</a>
+                    </dt>
+                    <dd>the client library which the user should add to the
+                        classpath.
+                    </dd>
+
+                </dl>
+            </subsection>
+
+            <subsection name="Using the client from maven">
+                <p>It is expected that most people will express their dependency upon the icat.client by means of a maven pom file. To do this the
+                    user
+                    needs to define the repository and express the dependency as indicated in the snippet below:
+                </p>
+
+                <code>
+                    &lt;repositories&gt;
+                    <br />
+                    &#160;&#160;&#160;&lt;repository&gt;
+                    <br />
+                    &#160;&#160;&#160;&#160;&#160;&#160;&lt;id&gt;ICAT Repo&lt;/id&gt;
+                    <br />
+                    &#160;&#160;&#160;&#160;&#160;&#160;&lt;url&gt;http://www.icatproject.org/mvn/repo&lt;/url&gt;
+                    <br />
+                    &#160;&#160;&#160;&lt;/repository&gt;
+                    <br />
+                    &#160;&#160;&#160;...
+                    <br />
+                    &lt;/repositories&gt;
+                    <br />
+                    <br />
+                    &lt;dependencies&gt;
+                    <br />
+                    &#160;&#160;&#160;&lt;dependency&gt;
+                    <br />
+                    &#160;&#160;&#160;&#160;&#160;&#160;&lt;groupId&gt;org.icatproject&lt;/groupId&gt;
+                    <br />
+                    &#160;&#160;&#160;&#160;&#160;&#160;&lt;artifactId&gt;ids.client&lt;/artifactId&gt;
+                    <br />
+                    &#160;&#160;&#160;&#160;&#160;&#160;&lt;version&gt;${project.version}&lt;/version&gt;
+                    <br />
+                    &#160;&#160;&#160;&lt;/dependency&gt;
+                    <br />
+                    &#160;&#160;&#160;...
+                    <br />
+                    &lt;/dependencies&gt;
+                </code>
+            </subsection>
+        </section>
+    </body>
+</document>
+			

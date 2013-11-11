@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document xmlns="http://maven.apache.org/XDOC/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+    <properties>
+        <title>IDS Java Client User Manual</title>
+    </properties>
+
+    <body>
+
+        <section name="Introduction">
+
+
+            <p>The IDS API provides easy access from Java to a deployed ICAT Data Service (IDS)
+                Files may be uploaded, downloaded and deleted from the
+                IDS. When a file is uploaded or deleted the action is recorded in ICAT as a new or deleted
+                Datafile. ICAT authorization rules are used
+                to assign the same rights to access the data as those granted to the metadata.
+            </p>
+
+
+
+            <p>
+                Installation and accessing from maven is explained in
+                <a href="installation.html">Java Client Installation.</a>
+            </p>
+
+            <subsection name="Setting Up">
+                <p>Create an IDSClient instance passing it the URL of the machine providing the service.
+                </p>
+
+                <code>
+                    URL hostUrl = new URL("https://&lt;hostname&gt;:8181")
+                    <br />
+                    client = new IdsClient(url);
+                </code>
+
+                <p>where &lt;hostname&gt; should be the full name of the IDS server. For a secure installation, just specifying localhost will not
+                    work, the name must match what is on the host certificate.
+                </p>
+
+            </subsection>
+
+
+            <subsection name="Using it">
+                <p>Most calls to the IDS require an ICAT sessionId so first log in to ICAT to get a sessionId.</p>
+
+                Please consult the
+                <a href="apidocs">javadoc</a>
+                for a full explanation of what all the calls do.
+            </subsection>
+
+
+
+        </section>
+    </body>
+
+</document>

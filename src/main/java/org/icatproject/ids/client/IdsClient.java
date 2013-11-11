@@ -15,6 +15,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.zip.CRC32;
+import java.util.zip.CheckedInputStream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -177,13 +179,13 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws NotFoundException
 	 */
-	public void archive(String sessionId, DataSelection data) throws NotImplementedException,
-			BadRequestException, InsufficientPrivilegesException, InternalException,
-			NotFoundException {
+	public void archive(String sessionId, DataSelection dataSelection)
+			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
+			InternalException, NotFoundException {
 
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(data.getParameters());
+		parameters.putAll(dataSelection.getParameters());
 
 		try {
 			process("archive", parameters, Method.POST, ParmPos.BODY, null, null);
@@ -208,13 +210,13 @@ public class IdsClient {
 	 * @throws NotFoundException
 	 * @throws DataNotOnlineException
 	 */
-	public void delete(String sessionId, DataSelection data) throws NotImplementedException,
-			BadRequestException, InsufficientPrivilegesException, InternalException,
-			NotFoundException, DataNotOnlineException {
+	public void delete(String sessionId, DataSelection dataSelection)
+			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
+			InternalException, NotFoundException, DataNotOnlineException {
 
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(data.getParameters());
+		parameters.putAll(dataSelection.getParameters());
 
 		try {
 			process("delete", parameters, Method.DELETE, ParmPos.URL, null, null);
@@ -249,13 +251,13 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws DataNotOnlineException
 	 */
-	public InputStream getData(String sessionId, DataSelection data, Flag flags, String outname,
-			long offset) throws NotImplementedException, BadRequestException,
+	public InputStream getData(String sessionId, DataSelection dataSelection, Flag flags,
+			String outname, long offset) throws NotImplementedException, BadRequestException,
 			InsufficientPrivilegesException, NotFoundException, InternalException,
 			DataNotOnlineException {
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(data.getParameters());
+		parameters.putAll(dataSelection.getParameters());
 		if (flags == Flag.ZIP || flags == Flag.ZIP_AND_COMPRESS) {
 			parameters.put("zip", "true");
 		}
@@ -389,12 +391,12 @@ public class IdsClient {
 	 * @throws NotFoundException
 	 * @throws InternalException
 	 */
-	public Status getStatus(String sessonId, DataSelection data) throws BadRequestException,
-			NotFoundException, InsufficientPrivilegesException, InternalException,
-			NotImplementedException {
+	public Status getStatus(String sessionId, DataSelection dataSelection)
+			throws BadRequestException, NotFoundException, InsufficientPrivilegesException,
+			InternalException, NotImplementedException {
 		Map<String, String> parameters = new HashMap<>();
-		parameters.put("sessionId", sessonId);
-		parameters.putAll(data.getParameters());
+		parameters.put("sessionId", sessionId);
+		parameters.putAll(dataSelection.getParameters());
 
 		HttpURLConnection urlc;
 
@@ -488,12 +490,12 @@ public class IdsClient {
 	 * @throws NotFoundException
 	 * @throws InternalException
 	 */
-	public String prepareData(String sessionId, DataSelection data, Flag flags)
+	public String prepareData(String sessionId, DataSelection dataSelection, Flag flags)
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
 			NotFoundException, InternalException {
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(data.getParameters());
+		parameters.putAll(dataSelection.getParameters());
 		if (flags == Flag.ZIP || flags == Flag.ZIP_AND_COMPRESS) {
 			parameters.put("zip", "true");
 		}
@@ -654,7 +656,8 @@ public class IdsClient {
 	}
 
 	/**
-	 * Put the data in the inputStream into a data file and catalogue it.
+	 * Put the data in the inputStream into a data file and catalogue it. The client generates a
+	 * checksum which is compared to that produced by the server to detect any transmission errors.
 	 * 
 	 * @param sessionId
 	 *            A valid ICAT session ID
@@ -688,7 +691,8 @@ public class IdsClient {
 	}
 
 	/**
-	 * Put the data in the inputStream into a data file and catalogue it.
+	 * Put the data in the inputStream into a data file and catalogue it. The client generates a
+	 * checksum which is compared to that produced by the server to detect any transmission errors.
 	 * 
 	 * @param sessionId
 	 *            A valid ICAT session ID
@@ -746,13 +750,28 @@ public class IdsClient {
 			parameters.put("datafileModTime", Long.toString(datafileModTime.getTime()));
 		}
 
+		if (inputStream == null) {
+			throw new BadRequestException("Input stream is null");
+		}
+		CRC32 crc = new CRC32();
+		inputStream = new CheckedInputStream(inputStream, crc);
+		HttpURLConnection urlc = process("put", parameters, Method.PUT, ParmPos.URL, null,
+				inputStream);
+		ObjectMapper mapper = new ObjectMapper();
+
 		try {
-			HttpURLConnection urlc = process("put", parameters, Method.PUT, ParmPos.URL, null,
-					inputStream);
-			return Long.parseLong(getOutput(urlc));
+			ObjectNode rootNode = (ObjectNode) mapper.readValue(urlc.getInputStream(),
+					JsonNode.class);
+			if (!rootNode.get("checksum").asText().equals(Long.toString(crc.getValue()))) {
+				throw new InternalException("Error uploading - the checksum was not as expected");
+			}
+			return Long.parseLong(rootNode.get("id").asText());
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
 		} catch (NumberFormatException e) {
 			throw new InternalException("Web service call did not return a valid Long value");
 		}
+
 	}
 
 	/**
@@ -769,13 +788,13 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws NotFoundException
 	 */
-	public void restore(String sessionId, DataSelection data) throws NotImplementedException,
-			BadRequestException, InsufficientPrivilegesException, InternalException,
-			NotFoundException {
+	public void restore(String sessionId, DataSelection dataSelection)
+			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
+			InternalException, NotFoundException {
 
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("sessionId", sessionId);
-		parameters.putAll(data.getParameters());
+		parameters.putAll(dataSelection.getParameters());
 
 		try {
 			process("restore", parameters, Method.POST, ParmPos.BODY, null, null);

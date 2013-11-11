@@ -8,7 +8,10 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <repoUrl>http://www.icatproject.org/mvn/repo</repoUrl>
     </properties>
+
+
 
     <distributionManagement>
         <downloadUrl>http://www.icatproject.org/mvn/repo</downloadUrl>
@@ -70,13 +73,13 @@
             <scope>test</scope>
         </dependency>
 
-
         <dependency>
             <groupId>org.icatproject</groupId>
             <artifactId>ids.server</artifactId>
             <version>1.0.0-SNAPSHOT</version>
             <scope>test</scope>
             <type>test-jar</type>
+
         </dependency>
     </dependencies>
 

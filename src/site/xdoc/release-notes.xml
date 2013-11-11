@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document xmlns="http://maven.apache.org/XDOC/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+    <properties>
+        <title>IDS Client Release Notes</title>
+    </properties>
+
+    <body>
+        <section name="1.0.0">
+            <p>This is the initial release.
+            </p>
+            <!-- <ul> -->
+            <!-- <li>logout called with an expired or otherwise invalid sessionId now throws an exception of type SESSION rather than INTERNAL. -->
+            <!-- </li> -->
+            <!-- </ul> -->
+        </section>
+
+    </body>
+</document>
