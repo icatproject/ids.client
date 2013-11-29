@@ -31,7 +31,7 @@ public class DataSelection {
 	 * @return itself to allow chaining of addXXX calls
 	 */
 	public DataSelection addDatafiles(List<Long> datafileIds) {
-		datafileIds.addAll(datafileIds);
+		this.datafileIds.addAll(datafileIds);
 		return this;
 	}
 
@@ -49,7 +49,7 @@ public class DataSelection {
 	 * @return itself to allow chaining of addXXX calls
 	 */
 	public DataSelection addDatasets(List<Long> datasetIds) {
-		datasetIds.addAll(datasetIds);
+		this.datasetIds.addAll(datasetIds);
 		return this;
 	}
 
@@ -67,7 +67,7 @@ public class DataSelection {
 	 * @return itself to allow chaining of addXXX calls
 	 */
 	public DataSelection addInvestigations(List<Long> investigationIds) {
-		investigationIds.addAll(investigationIds);
+		this.investigationIds.addAll(investigationIds);
 		return this;
 	}
 

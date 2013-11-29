@@ -334,7 +334,7 @@ public class IdsClient {
 	 * defined in the IDS configuration.
 	 * 
 	 * @param sessionId
-	 *            A valid ICAT session ID of a suer in the IDS rootUserNames set.
+	 *            A valid ICAT session ID of a user in the IDS rootUserNames set.
 	 * 
 	 * @return a ServiceStatus object
 	 * 
