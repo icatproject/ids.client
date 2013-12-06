@@ -569,6 +569,7 @@ public class IdsClient {
 			}
 
 			if (inputStream != null) {
+				urlc.setChunkedStreamingMode(8192);
 				BufferedOutputStream bos = null;
 				BufferedInputStream bis = null;
 				try {

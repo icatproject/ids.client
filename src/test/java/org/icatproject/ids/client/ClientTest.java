@@ -2,7 +2,11 @@ package org.icatproject.ids.client;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
+import java.nio.file.Files;
 
 import org.icatproject.ids.client.IdsClient.Flag;
 import org.icatproject.ids.client.IdsClient.ServiceStatus;
@@ -21,6 +25,12 @@ public class ClientTest extends BaseTest {
 		icatsetup();
 		URL url = new URL(setup.getIdsUrl(), "/");
 		client = new IdsClient(url);
+
+		OutputStream p = Files.newOutputStream(new File("a.b").toPath());
+		p.write("wibble".getBytes());
+		byte[] bytes = new byte[100000];
+		p.write(bytes);
+		p.close();
 	}
 
 	@Test
@@ -65,14 +75,16 @@ public class ClientTest extends BaseTest {
 		client.ping();
 	}
 
-	@Test(expected = BadRequestException.class)
+	@Test(expected = NotFoundException.class)
 	public void testPut() throws Exception {
-		client.put(sessionId, null, "fred", 1L, 2L, "Description");
+		InputStream is = Files.newInputStream(new File("a.b").toPath());
+		client.put(sessionId, is, "fred", 1L, 2L, "Description");
 	}
 
-	@Test(expected = BadRequestException.class)
+	@Test(expected = NotFoundException.class)
 	public void testPut2() throws Exception {
-		client.put(sessionId, null, "fred", 1L, 2L, "Description", null, null, null);
+		InputStream is = Files.newInputStream(new File("a.b").toPath());
+		client.put(sessionId, is, "fred", 1L, 2L, "Description", null, null, null);
 	}
 
 }
