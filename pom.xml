@@ -79,6 +79,11 @@
             <type>test-jar</type>
 
         </dependency>
+        <dependency>
+            <groupId>org.icatproject</groupId>
+            <artifactId>icat.utils</artifactId>
+            <version>4.3.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -133,25 +138,25 @@
                     </execution>
                 </executions>
             </plugin>
-            
-<!--              <plugin> -->
-<!--                 <groupId>org.codehaus.mojo</groupId> -->
-<!--                 <artifactId>exec-maven-plugin</artifactId> -->
-<!--                 <executions> -->
-<!--                     <execution> -->
-<!--                         <phase>process-classes</phase> -->
-<!--                         <goals> -->
-<!--                             <goal>java</goal> -->
-<!--                         </goals> -->
-<!--                     </execution> -->
-<!--                 </executions> -->
-<!--                 <configuration> -->
-<!--                     <mainClass>org.icatproject.core.DocGenerator</mainClass> -->
-<!--                     <arguments> -->
-<!--                         <argument>${basedir}</argument> -->
-<!--                     </arguments> -->
-<!--                 </configuration> -->
-<!--             </plugin> -->
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>${project.basedir}/assemble/distribution.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
         </plugins>
 

@@ -10,43 +10,66 @@
         <section name="Introduction">
 
 
-            <p>The IDS API provides easy access from Java to a deployed ICAT Data Service (IDS)
-                Files may be uploaded, downloaded and deleted from the
+            <p>The IDS APIs provides easy access from Java and Python to a deployed ICAT Data Service (IDS)
+                Files may be uploaded, downloaded and
+                deleted from the
                 IDS. When a file is uploaded or deleted the action is recorded in ICAT as a new or deleted
-                Datafile. ICAT authorization rules are used
+                Datafile. ICAT authorization
+                rules are used
                 to assign the same rights to access the data as those granted to the metadata.
             </p>
 
-
-
             <p>
                 Installation and accessing from maven is explained in
-                <a href="installation.html">Java Client Installation.</a>
+                <a href="installation.html">Client Installation.</a>
             </p>
 
             <subsection name="Setting Up">
-                <p>Create an IDSClient instance passing it the URL of the machine providing the service.
+                <p>Create an IDSClient instance passing it the URL of the machine providing the service. Irrespective of language, &lt;hostname&gt;
+                    as
+                    used in the code snippets below should be the full name of the IDS server. For a secure installation, just specifying
+                    localhost
+                    will not work, the name must match what is on the host certificate.
                 </p>
 
+                <h4>From Java</h4>
+
                 <code>
-                    URL hostUrl = new URL("https://&lt;hostname&gt;:8181")
+                    URL url = new URL("https://&lt;hostname&gt;:8181")
                     <br />
                     client = new IdsClient(url);
                 </code>
 
-                <p>where &lt;hostname&gt; should be the full name of the IDS server. For a secure installation, just specifying localhost will not
-                    work, the name must match what is on the host certificate.
-                </p>
+                <h4>From Python</h4>
+
+                <code>
+                    import ids
+                    <br />
+                    <br />
+                    url = "https://&lt;hostname&gt;:8181"
+                    <br />
+                    client = ids.IdsClient(url)
+                </code>
 
             </subsection>
-
 
             <subsection name="Using it">
                 <p>Most calls to the IDS require an ICAT sessionId so first log in to ICAT to get a sessionId.</p>
 
-                Please consult the
-                <a href="apidocs">javadoc</a>
-                for a full explanation of what all the calls do.
+                <p>
+                    Please consult the
+                    <a href="apidocs">javadoc</a>
+                    for a full explanation of what all the calls do for Java. The python documentation is available in the usual way. Just enter
+                    <code>pydoc ids</code>
+                    from the command line.
+                </p>
+
+                <p>It should be noted that the Java and Python apis are different in style. The python has retained the Java style method names but
+                    getData has been split into two calls: getData and getPreparedData. The DataSelection object in the Java calls is replaced by
+                    optional named lists of ids.
+                </p>
+
+
             </subsection>
 
 

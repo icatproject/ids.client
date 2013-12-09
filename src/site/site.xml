@@ -3,9 +3,9 @@
     xsi:schemaLocation="http://maven.apache.org/DECORATION/1.0.0 http://maven.apache.org/xsd/decoration-1.0.0.xsd">
   <body>
     <menu name="Contents">
-      <item name="Java Client User Manual" href="manual.html"/>
-      <item name="Java Client Javadoc" href="apidocs/index.html"/>
-      <item name="Java Client Installation" href="installation.html"/>
+      <item name="IDS Client User Manual" href="manual.html"/>
+      <item name="IDS Client Javadoc" href="apidocs/index.html"/>
+      <item name="IDS Client Installation" href="installation.html"/>
       <item name="Release notes" href="release-notes.html"/>
     </menu>
    

@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+from setup_utils import *
+import shutil
+import distsetup
+import glob
+import os
+from distutils.sysconfig import get_python_lib
+
+# ids.client
+
+actions, options, arg = getActions(appDir=True)
+
+if arg == "CONFIGURE":
+    actions.setConfigured()
+
+elif arg == "INSTALL":
+    
+    actions.checkConfigured()
+    
+    try:
+        distsetup.run()
+        shutil.rmtree("build")
+        for f in glob.glob("*.pyc"): os.remove(f)
+               
+        if options.verbose: print "Installed python ids.client" 
+
+    except Exception, e:
+        abort(str(e))
+                
+else:  # UNINSTALL
+    
+    try: 
+        dir = get_python_lib()
+        for f in glob.glob(dir + "/ids*egg-info") + glob.glob(dir + "/ids.py*"): 
+            if options.verbose: print "Uninstalled", f
+            os.remove(f)
+
+    except Exception, e:
+        abort(str(e))       
+    
+            
+    
