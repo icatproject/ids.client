@@ -285,6 +285,8 @@ public class IdsClient {
 	}
 
 	/**
+	 * Get the data using the preparedId returned by a call to prepareData
+	 * 
 	 * @param preparedId
 	 *            A valid preparedId returned by a call to prepareData
 	 * 

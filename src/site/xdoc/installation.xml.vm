@@ -2,7 +2,7 @@
 <document xmlns="http://maven.apache.org/XDOC/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
     <properties>
-        <title>ICAT Java Client Installation</title>
+        <title>IDS Java Client Installation</title>
     </properties>
 
     <body>
@@ -11,8 +11,8 @@
 
             <subsection name="Manual Installation">
 
-                <p>There is one file that should be made available to those wishing
-                    to use the ICAT client:
+                <p>There are two files that should be made available to those wishing
+                    to use the IDS client:
                 </p>
                 <dl>
                     <dt>
@@ -20,6 +20,11 @@
                     </dt>
                     <dd>the client library which the user should add to the
                         classpath.
+                    </dd>
+                     <dt>
+                        <a href="${repoUrl}/org/icatproject/ids.client/${project.version}/ids.client-${project.version}-sources.jar">ids.client-${project.version}-sources.jar</a>
+                    </dt>
+                    <dd>the source of the client library to which which the user may wish to refer.
                     </dd>
 
                 </dl>

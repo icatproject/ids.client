@@ -7,6 +7,10 @@ import zlib
 class IdsClient(object):
     
     def __init__(self, url):
+        """
+        Create an IdsClient. The url should have the scheme, hostname and optionally the port. 
+        It may also have a path if it is installed behind an apache front end. 
+        """
         o = urlparse.urlparse(url)
         self.secure = o.scheme == "https"
         self.ids_host = o.netloc
@@ -15,49 +19,106 @@ class IdsClient(object):
         self.path = path + "ids/"
         
     def ping(self):
+        """
+        Check that the server is alive and is an IDS server
+        """
         result = self._process("ping", {}, "GET").read()
         if not result == "IdsOK": 
             raise IdsException("NotFoundException", "Server gave invalid response: " + result)
             
     def getServiceStatus(self, sessionId):
+        """
+        Return information about what the IDS is doing. If all lists are empty it is quiet.
+     
+        To use this call, the user represented by the sessionId must be in the set of rootUserNames
+        defined in the IDS configuration.
+        """
         parameters = {}
         parameters["sessionId"] = sessionId; 
         result = self._process("getServiceStatus", parameters, "GET").read()
         return json.loads(result)
     
     def getStatus(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[]):
+        """
+        Return the status of the data specified by the datafileIds datasetIds and investigationIds
+        """
         parameters = {}
         parameters["sessionId"] = sessionId;   
         _fillParms(parameters, datafileIds, datasetIds, investigationIds)
         return  self._process("getStatus", parameters, "GET").read()
     
     def restore(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[]):
+        """
+        Restore data specified by the datafileIds datasetIds and investigationIds
+        """
         parameters = {"sessionId": sessionId}
         _fillParms(parameters, datafileIds, datasetIds, investigationIds)
         self._process("restore", parameters, "POST", headers={"Content-Type":"application/x-www-form-urlencoded"}).read()
         
     def archive(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[]):
+        """
+        Archive data specified by the datafileIds datasetIds and investigationIds
+        """
         parameters = {"sessionId": sessionId}
         _fillParms(parameters, datafileIds, datasetIds, investigationIds)
         self._process("restore", parameters, "POST", headers={"Content-Type":"application/x-www-form-urlencoded"}).read()
       
     def isPrepared(self, preparedId):
+        """
+        Returns true if the data identified by the preparedId returned by a call to prepareData is ready.
+        """
         parameters = {"preparedId": preparedId}
         if self._process("isPrepared", parameters, "GET"): return True
         return False
     
+    def prepareData(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[], compressFlag=False, zipFlag=False):
+        """
+        Prepare data for a subsequent getPreparedData call.
+        """
+        parameters = {"sessionId": sessionId}
+        _fillParms(parameters, datafileIds, datasetIds, investigationIds)
+        if zipFlag:  parameters["zip"] = "true";
+        if compressFlag: parameters["compress"] = "true";
+        return self._process("prepareData", parameters, "POST").read()
+    
     def getData(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[], compressFlag=False, zipFlag=False, outname=None, offset=0):
+        """
+        Stream the requested data
+        """
         parameters = {"sessionId": sessionId}
         _fillParms(parameters, datafileIds, datasetIds, investigationIds)
         if zipFlag:  parameters["zip"] = "true";
         if compressFlag: parameters["compress"] = "true";
         if outname: parameters["outname"] = outname
+        if offset: headers = {"Range": "bytes=" + str(offset) + "-"} 
+        else: headers = None
+        return self._process("getData", parameters, "GET", headers=headers)
+    
+    def delete(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[]):
+        """
+        Delete the data identified by the datafileIds, datasetIds and investigationIds
+        """
+        parameters = {"sessionId": sessionId}
+        _fillParms(parameters, datafileIds, datasetIds, investigationIds)
+        self._process("delete", parameters, "DELETE")
+    
+    def getPreparedData(self, preparedId, outname=None, offset=0):
+        """
+        Get the data using the preparedId returned by a call to prepareData
+        """
+        parameters = {"preparedId": preparedId}
+        if outname: parameters["outname"] = outname
         if offset: headers = {"Range": "bytes=" + str(offset) + "-"}
+        else: headers = None
         return self._process("getData", parameters, "GET", headers=headers)
       
     def put(self, sessionId, inputStream, name, datasetId,
             datafileFormatId, description=None, doi=None, datafileCreateTime=None,
-             datafileModTime=None): 
+             datafileModTime=None):
+        """
+        Put the data in the inputStream into a data file and catalogue it. The client generates a
+        checksum which is compared to that produced by the server to detect any transmission errors.
+        """
         parameters = {"sessionId": sessionId , "name":name, "datasetId": str(datasetId), "datafileFormatId": str(datafileFormatId)}
         if description: parameters["description"] = description
         if doi: parameters["doi"] = doi
@@ -112,7 +173,10 @@ class IdsClient(object):
         response = conn.getresponse()
         rc = response.status
         if (rc / 100 != 2):
-            om = json.loads(response.read())
+            try:
+                om = json.loads(response.read())
+            except Exception as e:
+                raise IdsException("InternalException", str(e))
             code = om["code"]
             message = om["message"]
             raise IdsException(code, message)

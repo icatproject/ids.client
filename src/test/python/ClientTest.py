@@ -109,19 +109,50 @@ class ClientTest(unittest.TestCase):
             self.client.isPrepared(preparedId)
             self.fail("Should have thrown exception")
         except ids.IdsException as e:
-            print e
+            self.assertEqual("NotFoundException", e.code)
+            
+    def testGetPreparedData(self):
+        try:
+            preparedId = self.sessionId
+            self.client.getPreparedData(preparedId)
+            self.fail("Should have thrown exception")
+        except ids.IdsException as e:
+            self.assertEqual("NotFoundException", e.code) 
+            
+    def testDelete(self):
+        try:
+            preparedId = self.sessionId
+            self.client.delete(self.sessionId, datafileIds=[1])
+            self.fail("Should have thrown exception")
+        except ids.IdsException as e:
             self.assertEqual("NotFoundException", e.code)   
 
     def testPing(self):
         self.client.ping();
  
-    def testPut(self):
+    def testManyThings(self):
         f = open("a.b", "w")
-        for i in range(1000): f.write(str(i) + " wibble ")
+        wibbles = ""
+        for i in range(1000): wibbles += (str(i) + " wibble ")
+        f.write(wibbles)
         f.close()
         f = open("a.b")
-        self.client.put(self.sessionId, f, "fred", self.dataset.id, self.dformat.id, "Description")
+        dfid = self.client.put(self.sessionId, f, "fred", self.dataset.id, self.dformat.id, "Description")
         f.close()
+        self.assertEquals("ONLINE", self.client.getStatus(self.sessionId, datafileIds=[dfid]))
+        f = self.client.getData(self.sessionId, datafileIds=[dfid])
+        self.assertEquals(wibbles, f.read())
+        f.close()
+        pid = self.client.prepareData(self.sessionId, datafileIds=[dfid])
+        f = self.client.getPreparedData(pid)
+        self.assertEquals(wibbles, f.read())
+        f.close()
+        self.client.delete(self.sessionId, datafileIds=[dfid])
+        try:
+            self.assertEquals("ONLINE", self.client.getStatus(self.sessionId, datafileIds=[dfid]))
+            self.fail("Should have thrown exception")    
+        except ids.IdsException as e:
+            self.assertEqual("NotFoundException", e.code)   
 
 if __name__ == '__main__':
     unittest.main()
