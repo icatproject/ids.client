@@ -22,7 +22,7 @@
 
                     <li>
                         The ids client distribution:
-                        <a href="${repoUrl}/org/icatproject/ids.server/${project.version}/ids.client-${project.version}-distro.zip">ids.client-${project.version}-distro.zip</a>
+                        <a href="${repoUrl}/org/icatproject/ids.client/${project.version}/ids.client-${project.version}-distro.zip">ids.client-${project.version}-distro.zip</a>
                     </li>
 
                     <li>
