@@ -376,6 +376,19 @@ public class IdsClient {
 		return getDataUrl(parameters);
 	}
 
+	/**
+	 * Get the URL to retrieve the data specified by the preparedId returned by a call to
+	 * prepareData
+	 * 
+	 * @param preparedId
+	 *            A valid preparedId returned by a call to prepareData
+	 * 
+	 * @param outname
+	 *            The name of the file. If it is in .zip format the .zip extension will be added if
+	 *            not present.
+	 * 
+	 * @return the URL to allow the data to be read
+	 */
 	public URL getDataUrl(String preparedId, String outname) {
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("preparedId", preparedId);
