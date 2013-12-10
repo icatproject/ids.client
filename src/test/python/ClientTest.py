@@ -5,6 +5,7 @@ import logging
 import tempfile
 import os
 import shutil
+import urlparse
 
 logging.basicConfig(level=logging.CRITICAL)
 
@@ -28,6 +29,7 @@ class ClientTest(unittest.TestCase):
             credentials.entry.append(entry)
         self.sessionId = service.login(plugin, credentials)
         self.client = ids.IdsClient(idsUrl)
+        self.idsUrl = idsUrl
         
         facilities = service.search(self.sessionId, "Facility [name = 'IdsPythonClientTest']")
         if facilities:
@@ -129,7 +131,38 @@ class ClientTest(unittest.TestCase):
 
     def testPing(self):
         self.client.ping();
- 
+        
+    def testGetDataUrl(self):
+        url = self.client.getDataUrl(self.sessionId, zipFlag=True, compressFlag=True,
+                                     outname="my favourite name", datasetIds=[1, 2], investigationIds=[3, 4] , datafileIds=[42])
+        urlBits = urlparse.urlparse(url)
+        self.assertEquals(self.idsUrl, urlBits.scheme + "://" + urlBits.netloc)
+        self.assertEquals("/ids/getData", urlBits.path)
+        self.assertTrue("sessionId=" + self.sessionId in urlBits.query)
+        self.assertTrue("compress=true" in urlBits.query)
+        self.assertTrue("zip=true" in urlBits.query)
+        self.assertTrue("outname=my+favourite+name" in urlBits.query)
+        self.assertTrue("investigationIds=3%2C4" in urlBits.query)
+        self.assertTrue("datafileIds=42" in urlBits.query)
+        self.assertTrue("datasetIds=1%2C2" in urlBits.query)
+        
+    def testGetDataUrl2(self):
+        url = self.client.getPreparedDataUrl(self.sessionId, outname="my favourite name")
+        print url
+        urlBits = urlparse.urlparse(url)
+        self.assertEquals(self.idsUrl, urlBits.scheme + "://" + urlBits.netloc)
+        self.assertEquals("/ids/getData", urlBits.path)
+        self.assertTrue("preparedId=" + self.sessionId in urlBits.query)
+        self.assertTrue("outname=my+favourite+name" in urlBits.query)
+    
+    def testGetDataUrl3(self):
+        url = self.client.getPreparedDataUrl(self.sessionId)
+        print url
+        urlBits = urlparse.urlparse(url)
+        self.assertEquals(self.idsUrl, urlBits.scheme + "://" + urlBits.netloc)
+        self.assertEquals("/ids/getData", urlBits.path)
+        self.assertTrue("preparedId=" + self.sessionId in urlBits.query)
+       
     def testManyThings(self):
         f = open("a.b", "w")
         wibbles = ""

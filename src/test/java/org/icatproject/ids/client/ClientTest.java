@@ -1,5 +1,6 @@
 package org.icatproject.ids.client;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -7,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.Arrays;
 
 import org.icatproject.ids.client.IdsClient.Flag;
 import org.icatproject.ids.client.IdsClient.ServiceStatus;
@@ -58,6 +60,47 @@ public class ClientTest extends BaseTest {
 	@Test(expected = BadRequestException.class)
 	public void testGetData() throws Exception {
 		client.getData(sessionId, new DataSelection(), Flag.NONE, null, 0);
+	}
+
+	@Test
+	public void testGetDataUrl() {
+		URL url = client.getDataUrl(
+				sessionId,
+				new DataSelection().addDatasets(Arrays.asList(1L, 2L))
+						.addInvestigations(Arrays.asList(3L, 4L)).addDatafile(42L),
+				Flag.ZIP_AND_COMPRESS, "my favourite name");
+		assertEquals(setup.getIdsUrl().getHost(), url.getHost());
+		assertEquals(setup.getIdsUrl().getPort(), url.getPort());
+		assertEquals("/ids/getData", url.getPath());
+		assertEquals(setup.getIdsUrl().getProtocol(), url.getProtocol());
+		assertTrue(url.getQuery().contains("sessionId=" + sessionId));
+		assertTrue(url.getQuery().contains("compress=true"));
+		assertTrue(url.getQuery().contains("zip=true"));
+		assertTrue(url.getQuery().contains("outname=my+favourite+name"));
+		assertTrue(url.getQuery().contains("investigationIds=3%2C4"));
+		assertTrue(url.getQuery().contains("datafileIds=42"));
+		assertTrue(url.getQuery().contains("datasetIds=1%2C2"));
+	}
+
+	@Test
+	public void testGetDataUrl2() {
+		URL url = client.getDataUrl(sessionId, "my favourite name");
+		assertEquals(setup.getIdsUrl().getHost(), url.getHost());
+		assertEquals(setup.getIdsUrl().getPort(), url.getPort());
+		assertEquals("/ids/getData", url.getPath());
+		assertEquals(setup.getIdsUrl().getProtocol(), url.getProtocol());
+		assertTrue(url.getQuery().contains("preparedId=" + sessionId));
+		assertTrue(url.getQuery().contains("outname=my+favourite+name"));
+	}
+	
+	@Test
+	public void testGetDataUrl3() {
+		URL url = client.getDataUrl(sessionId, null);
+		assertEquals(setup.getIdsUrl().getHost(), url.getHost());
+		assertEquals(setup.getIdsUrl().getPort(), url.getPort());
+		assertEquals("/ids/getData", url.getPath());
+		assertEquals(setup.getIdsUrl().getProtocol(), url.getProtocol());
+		assertTrue(url.getQuery().contains("preparedId=" + sessionId));
 	}
 
 	@Test(expected = NotFoundException.class)

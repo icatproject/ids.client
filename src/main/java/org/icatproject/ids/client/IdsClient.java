@@ -329,6 +329,62 @@ public class IdsClient {
 		return getStream(urlc);
 	}
 
+	private URL getDataUrl(Map<String, String> parameters) {
+		try {
+			URL url = new URL(idsUrl, "getData");
+			StringBuilder sb = new StringBuilder();
+			for (Entry<String, String> e : parameters.entrySet()) {
+				if (sb.length() != 0) {
+					sb.append("&");
+				}
+				sb.append(e.getKey() + "=" + URLEncoder.encode(e.getValue(), "UTF-8"));
+			}
+			return new URL(url + "?" + sb.toString());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Get the URL to retrieve the data specified by the dataSelection.
+	 * 
+	 * @param sessionId
+	 *            A valid ICAT session ID
+	 * @param dataSelection
+	 *            A data selection object that must not be empty
+	 * @param flags
+	 *            To select packing options
+	 * @param outname
+	 *            The name of the file. If it is in .zip format the .zip extension will be added if
+	 *            not present.
+	 * 
+	 * @return the URL to allow the data to be read
+	 */
+	public URL getDataUrl(String sessionId, DataSelection dataSelection, Flag flags, String outname) {
+		Map<String, String> parameters = new HashMap<>();
+		parameters.put("sessionId", sessionId);
+		parameters.putAll(dataSelection.getParameters());
+		if (flags == Flag.ZIP || flags == Flag.ZIP_AND_COMPRESS) {
+			parameters.put("zip", "true");
+		}
+		if (flags == Flag.COMPRESS || flags == Flag.ZIP_AND_COMPRESS) {
+			parameters.put("compress", "true");
+		}
+		if (outname != null) {
+			parameters.put("outname", outname);
+		}
+		return getDataUrl(parameters);
+	}
+
+	public URL getDataUrl(String preparedId, String outname) {
+		Map<String, String> parameters = new HashMap<>();
+		parameters.put("preparedId", preparedId);
+		if (outname != null) {
+			parameters.put("outname", outname);
+		}
+		return getDataUrl(parameters);
+	}
+
 	/**
 	 * Return a ServiceStatus object to understand what the IDS is doing.
 	 * 
