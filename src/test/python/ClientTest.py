@@ -6,6 +6,7 @@ import tempfile
 import os
 import shutil
 import urlparse
+import sys
 
 logging.basicConfig(level=logging.CRITICAL)
 
@@ -185,7 +186,10 @@ class ClientTest(unittest.TestCase):
             self.assertEquals("ONLINE", self.client.getStatus(self.sessionId, datafileIds=[dfid]))
             self.fail("Should have thrown exception")    
         except ids.IdsException as e:
-            self.assertEqual("NotFoundException", e.code)   
+            self.assertEqual("NotFoundException", e.code)
 
 if __name__ == '__main__':
-    unittest.main()
+    suite = unittest.TestLoader().loadTestsFromTestCase(ClientTest)
+    tm = unittest.TextTestRunner(verbosity=2).run(suite)
+    if (tm.errors or tm.failures): sys.exit(1)
+        

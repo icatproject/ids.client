@@ -53,7 +53,7 @@ class IdsClient(object):
         """
         parameters = {"sessionId": sessionId}
         _fillParms(parameters, datafileIds, datasetIds, investigationIds)
-        self._process("restore", parameters, "POST", headers={"Content-Type":"application/x-www-form-urlencoded"}).read()
+        self._process("restore", parameters, "POST").read()
         
     def archive(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[]):
         """
@@ -61,7 +61,7 @@ class IdsClient(object):
         """
         parameters = {"sessionId": sessionId}
         _fillParms(parameters, datafileIds, datasetIds, investigationIds)
-        self._process("restore", parameters, "POST", headers={"Content-Type":"application/x-www-form-urlencoded"}).read()
+        self._process("restore", parameters, "POST").read()
       
     def isPrepared(self, preparedId):
         """
@@ -179,8 +179,11 @@ class IdsClient(object):
            
         if headers:
             for header in headers:
-                print header, headers[header]
                 conn.putheader(header, headers[header])
+                
+        if parameters and method == "POST":
+            conn.putheader('Content-Type', 'application/x-www-form-urlencoded')       
+                
         conn.endheaders()
         
         if parameters and method == "POST":
@@ -200,9 +203,10 @@ class IdsClient(object):
         rc = response.status
         if (rc / 100 != 2):
             try:
-                om = json.loads(response.read())
-            except Exception as e:
-                raise IdsException("InternalException", str(e))
+                responseContent = response.read()
+                om = json.loads(responseContent)
+            except Exception:
+                raise IdsException("InternalException", responseContent)
             code = om["code"]
             message = om["message"]
             raise IdsException(code, message)

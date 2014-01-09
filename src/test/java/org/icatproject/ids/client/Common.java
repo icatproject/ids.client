@@ -2,10 +2,10 @@ package org.icatproject.ids.client;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -13,26 +13,24 @@ import java.util.Arrays;
 import org.icatproject.ids.client.IdsClient.Flag;
 import org.icatproject.ids.client.IdsClient.ServiceStatus;
 import org.icatproject.ids.integration.BaseTest;
-import org.icatproject.ids.integration.util.Setup;
-import org.junit.BeforeClass;
+import org.icatproject.utils.ShellCommand;
 import org.junit.Test;
 
-public class ClientTest extends BaseTest {
+public abstract class Common extends BaseTest {
 
-	private static IdsClient client;
+	protected static IdsClient client;
 
-	@BeforeClass
-	public static void setup() throws Exception {
-		setup = new Setup("one.properties");
-		icatsetup();
-		URL url = new URL(setup.getIdsUrl(), "/");
-		client = new IdsClient(url);
+	/** This is to stop eclipse trying to treat this class as a unit test */
+	public abstract void enable();
 
-		OutputStream p = Files.newOutputStream(new File("a.b").toPath());
-		p.write("wibble".getBytes());
-		byte[] bytes = new byte[100000];
-		p.write(bytes);
-		p.close();
+	@Test
+	public void python() {
+		ShellCommand sc = new ShellCommand("bash", "-c",
+				"PYTHONPATH=src/main/python/ python src/test/python/ClientTest.py");
+		if (sc.getExitValue() != 0) {
+			System.out.println(sc.getStdout());System.out.println(sc.getStderr());
+			fail();
+		}
 	}
 
 	@Test
@@ -92,7 +90,7 @@ public class ClientTest extends BaseTest {
 		assertTrue(url.getQuery().contains("preparedId=" + sessionId));
 		assertTrue(url.getQuery().contains("outname=my+favourite+name"));
 	}
-	
+
 	@Test
 	public void testGetDataUrl3() {
 		URL url = client.getDataUrl(sessionId, null);
