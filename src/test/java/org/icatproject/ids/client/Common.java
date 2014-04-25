@@ -120,12 +120,14 @@ public abstract class Common extends BaseTest {
 	public void testPut() throws Exception {
 		InputStream is = Files.newInputStream(new File("a.b").toPath());
 		client.put(sessionId, is, "fred", 1L, 2L, "Description");
+		is.close();
 	}
 
 	@Test(expected = NotFoundException.class)
 	public void testPut2() throws Exception {
 		InputStream is = Files.newInputStream(new File("a.b").toPath());
 		client.put(sessionId, is, "fred", 1L, 2L, "Description", null, null, null);
+		is.close();
 	}
 
 }
