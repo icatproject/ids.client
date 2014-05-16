@@ -8,16 +8,21 @@ from distutils.sysconfig import get_python_lib
 
 # ids.client
 
+pdir = get_python_lib()
+if not os.access(pdir, os.W_OK):
+    abort("You are not permitted to write to the python site-packages library - try becoming root")
+
 actions, options, arg = getActions(appDir=True)
 
-if arg == "CONFIGURE":
-    actions.setConfigured()
+if arg in ["CONFIGURE", "INSTALL"]:
+    actions.checkNoErrors()
+    
+if arg == "INSTALL":
 
-elif arg == "INSTALL":
-    
-    actions.checkConfigured()
-    
-    try:
+    try: 
+        dir = get_python_lib()
+        for f in glob.glob(dir + "/ids*egg-info") + glob.glob(dir + "/ids.py*"): 
+            os.remove(f)
         distsetup.run()
         shutil.rmtree("build")
         for f in glob.glob("*.pyc"): os.remove(f)
@@ -27,7 +32,7 @@ elif arg == "INSTALL":
     except Exception, e:
         abort(str(e))
                 
-else:  # UNINSTALL
+if arg == "UNINSTALL":
     
     try: 
         dir = get_python_lib()
