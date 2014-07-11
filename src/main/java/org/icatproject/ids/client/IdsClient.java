@@ -1,22 +1,39 @@
 package org.icatproject.ids.client;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.ParseException;
+import org.apache.http.StatusLine;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,14 +69,6 @@ public class IdsClient {
 		 */
 		ZIP_AND_COMPRESS
 	}
-
-	private enum Method {
-		DELETE, GET, POST, PUT
-	}
-
-	private enum ParmPos {
-		BODY, URL
-	};
 
 	/**
 	 * Returned by the getServiceStatus call
@@ -120,29 +129,9 @@ public class IdsClient {
 		RESTORING
 	};
 
-	private static String getOutput(HttpURLConnection urlc) throws InternalException {
-		try {
-			InputStream stream = urlc.getInputStream();
-			ByteArrayOutputStream os = null;
-			try {
-				os = new ByteArrayOutputStream();
-				int len;
-				byte[] buffer = new byte[1024];
-				while ((len = stream.read(buffer)) != -1) {
-					os.write(buffer, 0, len);
-				}
-				return os.toString().trim();
-			} finally {
-				if (stream != null) {
-					stream.close();
-				}
-			}
-		} catch (IOException e) {
-			throw new InternalException("IOException " + e.getMessage());
-		}
-	}
+	private String basePath;
 
-	private final int BUFSIZ = 2048;
+	private URI idsUri;
 
 	private URL idsUrl;
 
@@ -152,17 +141,20 @@ public class IdsClient {
 	 *            https://example.com:443.
 	 */
 	public IdsClient(URL idsUrl) {
-		String file = idsUrl.getFile();
-		if (!file.endsWith("/")) {
-			file = file + "/";
-		}
-		file = file + "ids/";
 		try {
-			this.idsUrl = new URL(idsUrl.getProtocol(), idsUrl.getHost(), idsUrl.getPort(), file);
-		} catch (MalformedURLException e) {
+			basePath = idsUrl.getFile();
+			if (!basePath.endsWith("/")) {
+				basePath = basePath + "/";
+			}
+			basePath = basePath + "ids/";
+
+			idsUri = new URI(idsUrl.getProtocol(), null, idsUrl.getHost(), idsUrl.getPort(), null,
+					null, null);
+			this.idsUrl = new URL(idsUrl.getProtocol(), idsUrl.getHost(), idsUrl.getPort(),
+					basePath);
+		} catch (URISyntaxException | MalformedURLException e) {
 			throw new RuntimeException(e);
 		}
-
 	}
 
 	/**
@@ -183,16 +175,81 @@ public class IdsClient {
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
 			InternalException, NotFoundException {
 
-		Map<String, String> parameters = new HashMap<>();
-		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
-
-		try {
-			process("archive", parameters, Method.POST, ParmPos.BODY, null, null);
-		} catch (InsufficientStorageException | DataNotOnlineException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
+		URI uri = getUri(getUriBuilder("archive"));
+		List<NameValuePair> formparams = new ArrayList<>();
+		formparams.add(new BasicNameValuePair("sessionId", sessionId));
+		for (Entry<String, String> entry : dataSelection.getParameters().entrySet()) {
+			formparams.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
 		}
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpPost httpPost = new HttpPost(uri);
+			httpPost.setEntity(new UrlEncodedFormEntity(formparams));
+			try (CloseableHttpResponse response = httpclient.execute(httpPost)) {
+				expectNothing(response);
+			} catch (InsufficientStorageException | DataNotOnlineException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+	}
+
+	private void checkStatus(HttpResponse response) throws InternalException, BadRequestException,
+			DataNotOnlineException, ParseException, IOException, InsufficientPrivilegesException,
+			NotImplementedException, InsufficientStorageException, NotFoundException {
+		StatusLine status = response.getStatusLine();
+		if (status == null) {
+			throw new InternalException("Status line returned is empty");
+		}
+		int rc = status.getStatusCode();
+		if (rc / 100 != 2) {
+			HttpEntity entity = response.getEntity();
+			String error;
+			if (entity == null) {
+				throw new InternalException("No explanation provided");
+			} else {
+				error = EntityUtils.toString(entity);
+			}
+			String code;
+			String message;
+			try {
+				ObjectMapper om = new ObjectMapper();
+				JsonNode rootNode = om.readValue(error, JsonNode.class);
+				code = rootNode.get("code").asText();
+				message = rootNode.get("message").asText();
+			} catch (Exception e) {
+				throw new InternalException("TestingClient " + error);
+			}
+
+			if (code.equals("BadRequestException")) {
+				throw new BadRequestException(message);
+			}
+
+			if (code.equals("DataNotOnlineException")) {
+				throw new DataNotOnlineException(message);
+			}
+
+			if (code.equals("InsufficientPrivilegesException")) {
+				throw new InsufficientPrivilegesException(message);
+			}
+
+			if (code.equals("InsufficientStorageException")) {
+				throw new InsufficientStorageException(message);
+			}
+
+			if (code.equals("InternalException")) {
+				throw new InternalException(message);
+			}
+
+			if (code.equals("NotFoundException")) {
+				throw new NotFoundException(message);
+			}
+
+			if (code.equals("NotImplementedException")) {
+				throw new NotImplementedException(message);
+			}
+		}
+
 	}
 
 	/**
@@ -214,17 +271,36 @@ public class IdsClient {
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
 			InternalException, NotFoundException, DataNotOnlineException {
 
-		Map<String, String> parameters = new HashMap<>();
-		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
-
-		try {
-			process("delete", parameters, Method.DELETE, ParmPos.URL, null, null);
-		} catch (InsufficientStorageException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
+		URIBuilder uriBuilder = getUriBuilder("delete");
+		uriBuilder.addParameter("sessionId", sessionId);
+		for (Entry<String, String> entry : dataSelection.getParameters().entrySet()) {
+			uriBuilder.addParameter(entry.getKey(), entry.getValue());
 		}
+		URI uri = getUri(uriBuilder);
 
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpDelete httpDelete = new HttpDelete(uri);
+			try (CloseableHttpResponse response = httpclient.execute(httpDelete)) {
+				expectNothing(response);
+			} catch (InsufficientStorageException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+	}
+
+	private void expectNothing(CloseableHttpResponse response) throws InternalException,
+			BadRequestException, DataNotOnlineException, ParseException,
+			InsufficientPrivilegesException, NotImplementedException, InsufficientStorageException,
+			NotFoundException, IOException {
+		checkStatus(response);
+		HttpEntity entity = response.getEntity();
+		if (entity != null) {
+			if (!EntityUtils.toString(entity).isEmpty()) {
+				throw new InternalException("No http entity expected in response");
+			}
+		}
 	}
 
 	/**
@@ -242,7 +318,8 @@ public class IdsClient {
 	 * @param offset
 	 *            Skip this number of bytes in the returned stream
 	 * 
-	 * @return an InputStream to allow the data to be read
+	 * @return an InputStream to allow the data to be read. Please remember to close the stream when
+	 *         you have finished with it.
 	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
@@ -255,32 +332,53 @@ public class IdsClient {
 			String outname, long offset) throws NotImplementedException, BadRequestException,
 			InsufficientPrivilegesException, NotFoundException, InternalException,
 			DataNotOnlineException {
-		Map<String, String> parameters = new HashMap<>();
-		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
-		if (flags == Flag.ZIP || flags == Flag.ZIP_AND_COMPRESS) {
-			parameters.put("zip", "true");
-		}
-		if (flags == Flag.COMPRESS || flags == Flag.ZIP_AND_COMPRESS) {
-			parameters.put("compress", "true");
-		}
-		if (outname != null) {
-			parameters.put("outname", outname);
-		}
-		HttpURLConnection urlc;
-		Map<String, String> headers = null;
-		if (offset != 0) {
-			headers = new HashMap<>();
-			headers.put("Range", "bytes=" + offset + "-");
-		}
-		try {
-			urlc = process("getData", parameters, Method.GET, ParmPos.URL, headers, null);
-		} catch (InsufficientStorageException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
+		URIBuilder uriBuilder = getUriBuilder("getData");
+		uriBuilder.setParameter("sessionId", sessionId);
+		for (Entry<String, String> entry : dataSelection.getParameters().entrySet()) {
+			uriBuilder.setParameter(entry.getKey(), entry.getValue());
 		}
 
-		return getStream(urlc);
+		if (flags == Flag.ZIP || flags == Flag.ZIP_AND_COMPRESS) {
+			uriBuilder.setParameter("zip", "true");
+		}
+		if (flags == Flag.COMPRESS || flags == Flag.ZIP_AND_COMPRESS) {
+			uriBuilder.setParameter("compress", "true");
+		}
+		if (outname != null) {
+			uriBuilder.setParameter("outname", outname);
+		}
+		URI uri = getUri(uriBuilder);
+		CloseableHttpResponse response = null;
+		CloseableHttpClient httpclient = null;
+		HttpGet httpGet = new HttpGet(uri);
+		if (offset != 0) {
+			httpGet.setHeader("Range", "bytes=" + offset + "-");
+		}
+		boolean closeNeeded = true;
+		try {
+			httpclient = HttpClients.createDefault();
+			response = httpclient.execute(httpGet);
+			checkStatus(response);
+			closeNeeded = false;
+			return new HttpInputStream(httpclient, response);
+		} catch (IOException | InsufficientStorageException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		} finally {
+			if (closeNeeded && httpclient != null) {
+				try {
+					if (response != null) {
+						try {
+							response.close();
+						} catch (Exception e) {
+							// Ignore it
+						}
+					}
+					httpclient.close();
+				} catch (IOException e) {
+					// Ignore it
+				}
+			}
+		}
 
 	}
 
@@ -296,7 +394,8 @@ public class IdsClient {
 	 * @param offset
 	 *            Skip this number of bytes in the returned stream
 	 * 
-	 * @return an InputStream to allow the data to be read
+	 * @return an InputStream to allow the data to be read. Please remember to close the stream when
+	 *         you have finished with it.
 	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
@@ -308,25 +407,44 @@ public class IdsClient {
 	public InputStream getData(String preparedId, String outname, long offset)
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
 			NotFoundException, InternalException, DataNotOnlineException {
-		Map<String, String> parameters = new HashMap<>();
-		parameters.put("preparedId", preparedId);
+		URIBuilder uriBuilder = getUriBuilder("getData");
+		uriBuilder.setParameter("preparedId", preparedId);
 		if (outname != null) {
-			parameters.put("outname", outname);
+			uriBuilder.setParameter("outname", outname);
 		}
-		HttpURLConnection urlc;
-		Map<String, String> headers = null;
-		if (offset != 0) {
-			headers = new HashMap<>();
-			headers.put("Range", "bytes=" + offset + "-");
-		}
-		try {
-			urlc = process("getData", parameters, Method.GET, ParmPos.URL, headers, null);
-		} catch (InsufficientStorageException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
-		}
+		URI uri = getUri(uriBuilder);
 
-		return getStream(urlc);
+		CloseableHttpResponse response = null;
+		CloseableHttpClient httpclient = null;
+		HttpGet httpGet = new HttpGet(uri);
+		if (offset != 0) {
+			httpGet.setHeader("Range", "bytes=" + offset + "-");
+		}
+		boolean closeNeeded = true;
+		try {
+			httpclient = HttpClients.createDefault();
+			response = httpclient.execute(httpGet);
+			checkStatus(response);
+			closeNeeded = false;
+			return new HttpInputStream(httpclient, response);
+		} catch (IOException | InsufficientStorageException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		} finally {
+			if (closeNeeded && httpclient != null) {
+				try {
+					if (response != null) {
+						try {
+							response.close();
+						} catch (Exception e) {
+							// Ignore it
+						}
+					}
+					httpclient.close();
+				} catch (IOException e) {
+					// Ignore it
+				}
+			}
+		}
 	}
 
 	private URL getDataUrl(Map<String, String> parameters) {
@@ -414,36 +532,36 @@ public class IdsClient {
 	 */
 	public ServiceStatus getServiceStatus(String sessionId) throws InternalException,
 			InsufficientPrivilegesException {
-		Map<String, String> parameters = new HashMap<>();
-		parameters.put("sessionId", sessionId);
-		HttpURLConnection urlc;
-		try {
-			urlc = process("getServiceStatus", parameters, Method.GET, ParmPos.URL, null, null);
-		} catch (InsufficientStorageException | DataNotOnlineException | InternalException
-				| BadRequestException | NotFoundException | NotImplementedException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
-		}
-		ObjectMapper mapper = new ObjectMapper();
-		try {
-			JsonNode rootNode = mapper.readValue(urlc.getInputStream(), JsonNode.class);
-			ServiceStatus serviceStatus = new ServiceStatus();
-			for (JsonNode on : (ArrayNode) rootNode.get("opsQueue")) {
-				String dsInfo = ((ObjectNode) on).get("dsInfo").asText();
-				String request = ((ObjectNode) on).get("request").asText();
-				serviceStatus.storeOpItems(dsInfo, request);
-			}
-			for (JsonNode on : (ArrayNode) rootNode.get("prepQueue")) {
-				String id = ((ObjectNode) on).get("id").asText();
-				String state = ((ObjectNode) on).get("state").asText();
-				serviceStatus.storePrepItems(id, state);
-			}
-			return serviceStatus;
-		} catch (IOException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
-		}
+		URIBuilder uriBuilder = getUriBuilder("getServiceStatus");
+		uriBuilder.setParameter("sessionId", sessionId);
+		URI uri = getUri(uriBuilder);
 
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpGet httpGet = new HttpGet(uri);
+
+			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+				String result = getString(response);
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode rootNode = mapper.readValue(result, JsonNode.class);
+				ServiceStatus serviceStatus = new ServiceStatus();
+				for (JsonNode on : (ArrayNode) rootNode.get("opsQueue")) {
+					String dsInfo = ((ObjectNode) on).get("dsInfo").asText();
+					String request = ((ObjectNode) on).get("request").asText();
+					serviceStatus.storeOpItems(dsInfo, request);
+				}
+				for (JsonNode on : (ArrayNode) rootNode.get("prepQueue")) {
+					String id = ((ObjectNode) on).get("id").asText();
+					String state = ((ObjectNode) on).get("state").asText();
+					serviceStatus.storePrepItems(id, state);
+				}
+				return serviceStatus;
+			} catch (InsufficientStorageException | DataNotOnlineException | InternalException
+					| BadRequestException | NotFoundException | NotImplementedException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
 	}
 
 	/**
@@ -465,28 +583,49 @@ public class IdsClient {
 	public Status getStatus(String sessionId, DataSelection dataSelection)
 			throws BadRequestException, NotFoundException, InsufficientPrivilegesException,
 			InternalException, NotImplementedException {
-		Map<String, String> parameters = new HashMap<>();
-		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
-
-		HttpURLConnection urlc;
-
-		try {
-			urlc = process("getStatus", parameters, Method.GET, ParmPos.URL, null, null);
-		} catch (InsufficientStorageException | DataNotOnlineException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
+		URIBuilder uriBuilder = getUriBuilder("getStatus");
+		uriBuilder.setParameter("sessionId", sessionId);
+		for (Entry<String, String> entry : dataSelection.getParameters().entrySet()) {
+			uriBuilder.addParameter(entry.getKey(), entry.getValue());
 		}
+		URI uri = getUri(uriBuilder);
 
-		return Status.valueOf(getOutput(urlc));
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpGet httpGet = new HttpGet(uri);
+
+			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+				return Status.valueOf(getString(response));
+			} catch (InsufficientStorageException | DataNotOnlineException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
 	}
 
-	private InputStream getStream(HttpURLConnection urlc) throws InternalException {
-		try {
-			return urlc.getInputStream();
-		} catch (IOException e) {
-			throw new InternalException("IOException " + e.getMessage());
+	private String getString(CloseableHttpResponse response) throws InternalException,
+			BadRequestException, DataNotOnlineException, ParseException,
+			InsufficientPrivilegesException, NotImplementedException, InsufficientStorageException,
+			NotFoundException, IOException {
+		checkStatus(response);
+		HttpEntity entity = response.getEntity();
+		if (entity == null) {
+			throw new InternalException("No http entity returned in response");
 		}
+		return EntityUtils.toString(entity);
+	}
+
+	private URI getUri(URIBuilder uriBuilder) throws InternalException {
+		try {
+			return uriBuilder.build();
+		} catch (URISyntaxException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+	}
+
+	private URIBuilder getUriBuilder(String path) {
+		return new URIBuilder(idsUri).setPath(basePath + "/" + path);
+
 	}
 
 	/**
@@ -505,18 +644,22 @@ public class IdsClient {
 	 */
 	public boolean isPrepared(String preparedId) throws BadRequestException, NotFoundException,
 			InternalException, NotImplementedException {
-		Map<String, String> parameters = new HashMap<>();
-		parameters.put("preparedId", preparedId);
+		URIBuilder uriBuilder = getUriBuilder("isPrepared");
+		uriBuilder.setParameter("preparedId", preparedId);
+		URI uri = getUri(uriBuilder);
 
-		HttpURLConnection urlc;
-		try {
-			urlc = process("isPrepared", parameters, Method.GET, ParmPos.URL, null, null);
-		} catch (InsufficientStorageException | DataNotOnlineException
-				| InsufficientPrivilegesException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpGet httpGet = new HttpGet(uri);
+
+			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+				return Boolean.parseBoolean(getString(response));
+			} catch (InsufficientStorageException | DataNotOnlineException
+					| InsufficientPrivilegesException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
 		}
-		return Boolean.parseBoolean(getOutput(urlc));
 	}
 
 	/**
@@ -527,19 +670,21 @@ public class IdsClient {
 	 *             If the server gives an unexpected response
 	 */
 	public void ping() throws InternalException, NotFoundException {
-		Map<String, String> emptyMap = Collections.emptyMap();
-		HttpURLConnection urlc;
-		try {
-			urlc = process("ping", emptyMap, Method.GET, ParmPos.URL, null, null);
-		} catch (InsufficientStorageException | DataNotOnlineException | InternalException
-				| BadRequestException | InsufficientPrivilegesException | NotFoundException
-				| NotImplementedException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
-		}
-		String result = getOutput(urlc);
-		if (!result.equals("IdsOK")) {
-			throw new NotFoundException("Server gave invalid response: " + result);
+		URI uri = getUri(getUriBuilder("ping"));
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpGet httpGet = new HttpGet(uri);
+			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+				String result = getString(response);
+				if (!result.equals("IdsOK")) {
+					throw new NotFoundException("Server gave invalid response: " + result);
+				}
+			} catch (IOException | InsufficientStorageException | DataNotOnlineException
+					| BadRequestException | InsufficientPrivilegesException | NotFoundException
+					| NotImplementedException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
 		}
 	}
 
@@ -564,167 +709,30 @@ public class IdsClient {
 	public String prepareData(String sessionId, DataSelection dataSelection, Flag flags)
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
 			NotFoundException, InternalException {
-		Map<String, String> parameters = new HashMap<>();
-		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
+		URI uri = getUri(getUriBuilder("prepareData"));
+		List<NameValuePair> formparams = new ArrayList<>();
+		formparams.add(new BasicNameValuePair("sessionId", sessionId));
+		for (Entry<String, String> entry : dataSelection.getParameters().entrySet()) {
+			formparams.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
+		}
 		if (flags == Flag.ZIP || flags == Flag.ZIP_AND_COMPRESS) {
-			parameters.put("zip", "true");
+			formparams.add(new BasicNameValuePair("zip", "true"));
 		}
 		if (flags == Flag.COMPRESS || flags == Flag.ZIP_AND_COMPRESS) {
-			parameters.put("compress", "true");
+			formparams.add(new BasicNameValuePair("compress", "true"));
 		}
-		HttpURLConnection urlc;
-		try {
-			urlc = process("prepareData", parameters, Method.POST, ParmPos.BODY, null, null);
-		} catch (InsufficientStorageException | DataNotOnlineException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
-		}
-		return getOutput(urlc);
-	}
-
-	private HttpURLConnection process(String relativeUrl, Map<String, String> parameters,
-			Method method, ParmPos parmPos, Map<String, String> headers, InputStream inputStream)
-			throws InternalException, BadRequestException, InsufficientPrivilegesException,
-			InsufficientStorageException, NotFoundException, NotImplementedException,
-			DataNotOnlineException {
-		HttpURLConnection urlc;
-		int rc;
-		try {
-			URL url;
-			url = new URL(idsUrl, relativeUrl);
-
-			String parms = null;
-
-			if (!parameters.isEmpty()) {
-
-				StringBuilder sb = new StringBuilder();
-				for (Entry<String, String> e : parameters.entrySet()) {
-					if (sb.length() != 0) {
-						sb.append("&");
-					}
-					sb.append(e.getKey() + "=" + URLEncoder.encode(e.getValue(), "UTF-8"));
-				}
-				parms = sb.toString();
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpEntity entity = new UrlEncodedFormEntity(formparams);
+			HttpPost httpPost = new HttpPost(uri);
+			httpPost.setEntity(entity);
+			try (CloseableHttpResponse response = httpclient.execute(httpPost)) {
+				return getString(response);
+			} catch (InsufficientStorageException | DataNotOnlineException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
-
-			if (parmPos == ParmPos.URL && parms != null) {
-				url = new URL(url + "?" + parms);
-			}
-
-			urlc = (HttpURLConnection) url.openConnection();
-			if (!parameters.isEmpty()) {
-				urlc.setDoOutput(true);
-			}
-
-			urlc.setUseCaches(false);
-			urlc.setRequestMethod(method.name());
-
-			if (headers != null) {
-				for (Entry<String, String> entry : headers.entrySet()) {
-					urlc.setRequestProperty(entry.getKey(), entry.getValue());
-				}
-			}
-
-			if (parmPos == ParmPos.BODY && parms != null) {
-
-				OutputStream os = null;
-				try {
-					os = urlc.getOutputStream();
-					os.write(parms.getBytes());
-				} finally {
-					if (os != null) {
-						os.close();
-					}
-				}
-			}
-
-			if (inputStream != null) {
-				urlc.setChunkedStreamingMode(8192);
-				BufferedOutputStream bos = null;
-				BufferedInputStream bis = null;
-				try {
-					int bytesRead = 0;
-					byte[] buffer = new byte[BUFSIZ];
-					bis = new BufferedInputStream(inputStream);
-					bos = new BufferedOutputStream(urlc.getOutputStream());
-
-					// write bytes to output stream
-					while ((bytesRead = bis.read(buffer)) > 0) {
-						bos.write(buffer, 0, bytesRead);
-					}
-				} finally {
-					if (bis != null) {
-						bis.close();
-					}
-					if (bos != null) {
-						bos.close();
-					}
-				}
-			}
-
-			rc = urlc.getResponseCode();
-		} catch (Exception e) {
+		} catch (IOException e) {
 			throw new InternalException(e.getClass() + " " + e.getMessage());
 		}
-
-		if (rc / 100 != 2) {
-			String error = null;
-			String code;
-			String message;
-			try {
-				InputStream stream = urlc.getErrorStream();
-				ByteArrayOutputStream os = null;
-				try {
-					os = new ByteArrayOutputStream();
-					int len;
-					byte[] buffer = new byte[1024];
-					while ((len = stream.read(buffer)) != -1) {
-						os.write(buffer, 0, len);
-					}
-					error = os.toString();
-				} finally {
-					if (stream != null) {
-						stream.close();
-					}
-				}
-				ObjectMapper om = new ObjectMapper();
-				JsonNode rootNode = om.readValue(error, JsonNode.class);
-				code = rootNode.get("code").asText();
-				message = rootNode.get("message").asText();
-			} catch (Exception e) {
-				throw new InternalException("TestingClient " + error);
-			}
-
-			if (code.equals("BadRequestException")) {
-				throw new BadRequestException(message);
-			}
-
-			if (code.equals("DataNotOnlineException")) {
-				throw new DataNotOnlineException(message);
-			}
-
-			if (code.equals("InsufficientPrivilegesException")) {
-				throw new InsufficientPrivilegesException(message);
-			}
-
-			if (code.equals("InsufficientStorageException")) {
-				throw new InsufficientStorageException(message);
-			}
-
-			if (code.equals("InternalException")) {
-				throw new InternalException(message);
-			}
-
-			if (code.equals("NotFoundException")) {
-				throw new NotFoundException(message);
-			}
-
-			if (code.equals("NotImplementedException")) {
-				throw new NotImplementedException(message);
-			}
-		}
-		return urlc;
 	}
 
 	/**
@@ -803,37 +811,38 @@ public class IdsClient {
 			Date datafileModTime) throws BadRequestException, NotFoundException, InternalException,
 			InsufficientPrivilegesException, NotImplementedException, DataNotOnlineException,
 			InsufficientStorageException {
-		Map<String, String> parameters = new HashMap<>();
-
-		parameters.put("sessionId", sessionId);
-		parameters.put("name", name);
-		parameters.put("datafileFormatId", Long.toString(datafileFormatId));
-		parameters.put("datasetId", Long.toString(datasetId));
-		if (description != null) {
-			parameters.put("description", description);
-		}
-		if (doi != null) {
-			parameters.put("doi", doi);
-		}
-		if (datafileCreateTime != null) {
-			parameters.put("datafileCreateTime", Long.toString(datafileCreateTime.getTime()));
-		}
-		if (datafileModTime != null) {
-			parameters.put("datafileModTime", Long.toString(datafileModTime.getTime()));
-		}
-
 		if (inputStream == null) {
 			throw new BadRequestException("Input stream is null");
 		}
 		CRC32 crc = new CRC32();
 		inputStream = new CheckedInputStream(inputStream, crc);
-		HttpURLConnection urlc = process("put", parameters, Method.PUT, ParmPos.URL, null,
-				inputStream);
-		ObjectMapper mapper = new ObjectMapper();
+		URIBuilder uriBuilder = getUriBuilder("put");
+		uriBuilder.setParameter("sessionId", sessionId).setParameter("name", name)
+				.setParameter("datafileFormatId", Long.toString(datafileFormatId))
+				.setParameter("datasetId", Long.toString(datasetId));
+		if (description != null) {
+			uriBuilder.setParameter("description", description);
+		}
+		if (doi != null) {
+			uriBuilder.setParameter("doi", doi);
+		}
+		if (datafileCreateTime != null) {
+			uriBuilder.setParameter("datafileCreateTime",
+					Long.toString(datafileCreateTime.getTime()));
+		}
+		if (datafileModTime != null) {
+			uriBuilder.setParameter("datafileModTime", Long.toString(datafileModTime.getTime()));
+		}
 
-		try {
-			ObjectNode rootNode = (ObjectNode) mapper.readValue(urlc.getInputStream(),
-					JsonNode.class);
+		URI uri = getUri(uriBuilder);
+		CloseableHttpClient httpclient = HttpClients.createDefault();
+		HttpPut httpPut = new HttpPut(uri);
+		httpPut.setEntity(new InputStreamEntity(inputStream, ContentType.APPLICATION_OCTET_STREAM));
+
+		try (CloseableHttpResponse response = httpclient.execute(httpPut)) {
+			String result = getString(response);
+			ObjectMapper mapper = new ObjectMapper();
+			ObjectNode rootNode = (ObjectNode) mapper.readValue(result, JsonNode.class);
 			if (!rootNode.get("checksum").asText().equals(Long.toString(crc.getValue()))) {
 				throw new InternalException("Error uploading - the checksum was not as expected");
 			}
@@ -864,15 +873,23 @@ public class IdsClient {
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
 			InternalException, NotFoundException {
 
-		Map<String, String> parameters = new HashMap<>();
-		parameters.put("sessionId", sessionId);
-		parameters.putAll(dataSelection.getParameters());
-
-		try {
-			process("restore", parameters, Method.POST, ParmPos.BODY, null, null);
-		} catch (InsufficientStorageException | DataNotOnlineException e) {
-			throw new InternalException("Unexpected exception " + e.getClass() + " "
-					+ e.getMessage());
+		URI uri = getUri(getUriBuilder("restore"));
+		List<NameValuePair> formparams = new ArrayList<>();
+		formparams.add(new BasicNameValuePair("sessionId", sessionId));
+		for (Entry<String, String> entry : dataSelection.getParameters().entrySet()) {
+			formparams.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
+		}
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpEntity entity = new UrlEncodedFormEntity(formparams);
+			HttpPost httpPost = new HttpPost(uri);
+			httpPost.setEntity(entity);
+			try (CloseableHttpResponse response = httpclient.execute(httpPost)) {
+				expectNothing(response);
+			} catch (InsufficientStorageException | DataNotOnlineException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
 		}
 	}
 
