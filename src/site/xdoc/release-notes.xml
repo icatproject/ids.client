@@ -6,6 +6,14 @@
     </properties>
 
     <body>
+        <section name="1.0.2">
+            <p>Two small fixes to the python code.
+            </p>
+            <ul>
+                <li>The archive call in the python API now works.</li>
+                <li>The isPrepared call in the python API now works.</li>
+            </ul>
+        </section>
         <section name="1.0.1">
             <p>Updated setup script to make the configure step optional.
             </p>

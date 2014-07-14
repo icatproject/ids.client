@@ -61,15 +61,15 @@ class IdsClient(object):
         """
         parameters = {"sessionId": sessionId}
         _fillParms(parameters, datafileIds, datasetIds, investigationIds)
-        self._process("restore", parameters, "POST").read()
+        self._process("archive", parameters, "POST").read()
       
     def isPrepared(self, preparedId):
         """
         Returns true if the data identified by the preparedId returned by a call to prepareData is ready.
         """
         parameters = {"preparedId": preparedId}
-        if self._process("isPrepared", parameters, "GET"): return True
-        return False
+        response = self._process("isPrepared", parameters, "GET").read()
+        return response.lower() == "true"
     
     def prepareData(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[], compressFlag=False, zipFlag=False):
         """
