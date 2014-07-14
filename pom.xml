@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.icatproject</groupId>
     <artifactId>ids.client</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
     <name>IDS client</name>
 
     <properties>
@@ -30,9 +30,9 @@
     </issueManagement>
 
     <scm>
-        <connection>scm:svn:http://icat-data-service.googlecode.com/svn/idsclient/tags/ids.client-1.0.1</connection>
-        <developerConnection>scm:svn:https://icat-data-service.googlecode.com/svn/idsclient/tags/ids.client-1.0.1</developerConnection>
-        <url>http://code.google.com/p/icat-data-service/source/browse/#svn%2Fidsclient%2Ftrunk/tags/ids.client-1.0.1</url>
+        <connection>scm:svn:http://icat-data-service.googlecode.com/svn/idsclient/trunk</connection>
+        <developerConnection>scm:svn:https://icat-data-service.googlecode.com/svn/idsclient/trunk</developerConnection>
+        <url>http://code.google.com/p/icat-data-service/source/browse/#svn%2Fidsclient%2Ftrunk</url>
     </scm>
 
     <licenses>
