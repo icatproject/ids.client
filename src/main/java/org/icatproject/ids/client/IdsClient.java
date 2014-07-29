@@ -218,7 +218,8 @@ public class IdsClient {
 				code = rootNode.get("code").asText();
 				message = rootNode.get("message").asText();
 			} catch (Exception e) {
-				throw new InternalException("TestingClient " + error);
+				throw new InternalException("Status code " + rc
+						+ " returned but message not json: " + error);
 			}
 
 			if (code.equals("BadRequestException")) {
@@ -534,7 +535,12 @@ public class IdsClient {
 			InsufficientPrivilegesException {
 		URIBuilder uriBuilder = getUriBuilder("getServiceStatus");
 		uriBuilder.setParameter("sessionId", sessionId);
-		URI uri = getUri(uriBuilder);
+		URI uri;
+		try {
+			uri = getUri(uriBuilder);
+		} catch (BadRequestException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
 
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
 			HttpGet httpGet = new HttpGet(uri);
@@ -615,9 +621,14 @@ public class IdsClient {
 		return EntityUtils.toString(entity);
 	}
 
-	private URI getUri(URIBuilder uriBuilder) throws InternalException {
+	private URI getUri(URIBuilder uriBuilder) throws InternalException, BadRequestException {
 		try {
-			return uriBuilder.build();
+			URI uri = uriBuilder.build();
+			if (uri.toString().length() > 2048) {
+				throw new BadRequestException("Generated URI is of length "
+						+ uri.toString().length() + " whioch exceeds 2048");
+			}
+			return uri;
 		} catch (URISyntaxException e) {
 			throw new InternalException(e.getClass() + " " + e.getMessage());
 		}
@@ -670,8 +681,14 @@ public class IdsClient {
 	 *             If the server gives an unexpected response
 	 */
 	public void ping() throws InternalException, NotFoundException {
-		URI uri = getUri(getUriBuilder("ping"));
+		URI uri;
+		try {
+			uri = getUri(getUriBuilder("ping"));
+		} catch (BadRequestException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+
 			HttpGet httpGet = new HttpGet(uri);
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				String result = getString(response);
