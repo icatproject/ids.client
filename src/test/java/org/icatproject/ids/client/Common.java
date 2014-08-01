@@ -2,7 +2,6 @@ package org.icatproject.ids.client;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.InputStream;
@@ -13,7 +12,6 @@ import java.util.Arrays;
 import org.icatproject.ids.client.IdsClient.Flag;
 import org.icatproject.ids.client.IdsClient.ServiceStatus;
 import org.icatproject.ids.integration.BaseTest;
-import org.icatproject.utils.ShellCommand;
 import org.junit.Test;
 
 public abstract class Common extends BaseTest {
@@ -22,16 +20,6 @@ public abstract class Common extends BaseTest {
 
 	/** This is to stop eclipse trying to treat this class as a unit test */
 	public abstract void enable();
-
-	@Test
-	public void python() {
-		ShellCommand sc = new ShellCommand("bash", "-c",
-				"PYTHONPATH=src/main/python/ python src/test/python/ClientTest.py");
-		if (sc.getExitValue() != 0) {
-			System.out.println(sc.getStdout());System.out.println(sc.getStderr());
-			fail();
-		}
-	}
 
 	@Test
 	public void testGetServiceStatus() throws Exception {

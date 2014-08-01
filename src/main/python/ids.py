@@ -18,6 +18,18 @@ class IdsClient(object):
         if not path.endswith("/"): path = path + "/"
         self.path = path + "ids/"
         
+    def isReadOnly(self):
+        """
+        See if the server is configured to be readonly
+        """
+        return self._process("isReadOnly", {}, "GET").read() == "true"
+    
+    def isTwoLevel(self):
+        """
+        See if the server is configured to use both main and archive storage
+        """
+        return self._process("isTwoLevel", {}, "GET").read() == "true"
+    
     def ping(self):
         """
         Check that the server is alive and is an IDS server
@@ -94,6 +106,14 @@ class IdsClient(object):
         else: headers = None
         return self._process("getData", parameters, "GET", headers=headers)
     
+    def getSize(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[]):
+        """
+        Return the total size of the datafiles
+        """
+        parameters = {"sessionId": sessionId}
+        _fillParms(parameters, datafileIds, datasetIds, investigationIds)
+        return long(self._process("getSize", parameters, "GET").read())
+    
     def getDataUrl(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[], compressFlag=False, zipFlag=False, outname=None):
         """
         Get URL to retrieve the requested data
@@ -155,17 +175,26 @@ class IdsClient(object):
             url = "https://"
         else:
             url = "http://"
-        return url + self.ids_host + self.path + "getData" + "?" + urlencode(parameters)
+        url = url + self.ids_host + self.path + "getData" + "?" + urlencode(parameters)
+        if len(url) > 2048: raise IdsException(400, "Generated URL is of length "
+                        + len(url) + " which exceeds 2048")
+        return url
          
     def _process(self, relativeUrl, parameters, method, headers=None, body=None):
         path = self.path + relativeUrl
         if parameters: parameters = urlencode(parameters)
         if parameters and method != "POST":
             path = path + "?" + parameters
+        urllen = 4 + len(path) + len(self.ids_host)
         if self.secure:
             conn = httplib.HTTPSConnection(self.ids_host)
+            urllen += 5
         else:
             conn = httplib.HTTPConnection(self.ids_host)
+            urllen += 4
+        if urllen > 2048: raise IdsException(400, "Generated URI is of length "
+                        + urllen + " which exceeds 2048")
+             
         conn.putrequest(method, path, skip_accept_encoding=True)
         conn.putheader("Cache-Control", "no-cache")
         conn.putheader("Pragma", "no-cache")

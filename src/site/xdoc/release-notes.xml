@@ -6,6 +6,17 @@
     </properties>
 
     <body>
+        <section name="1.1.0">
+            <p>Three new calls added to both java and python APIs
+            </p>
+            <ul>
+                <li>Added call isReadOnly to determine readOnly status.</li>
+                <li>Added call isTwoLevel to determine if two both main and archive storage are in use.</li>
+                <li>Added call getSize to determine size of datafiles in a DataSelection. If you are using ICAT 4.3 a bug may cause this to be less
+                    than the true value.
+                </li>
+            </ul>
+        </section>
         <section name="1.0.3">
             <p>Two bug fixes.
             </p>

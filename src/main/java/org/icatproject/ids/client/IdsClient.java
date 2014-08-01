@@ -147,11 +147,12 @@ public class IdsClient {
 				basePath = basePath + "/";
 			}
 			basePath = basePath + "ids/";
+			String protocol = idsUrl.getProtocol();
+			String host = idsUrl.getHost();
+			int port = idsUrl.getPort();
 
-			idsUri = new URI(idsUrl.getProtocol(), null, idsUrl.getHost(), idsUrl.getPort(), null,
-					null, null);
-			this.idsUrl = new URL(idsUrl.getProtocol(), idsUrl.getHost(), idsUrl.getPort(),
-					basePath);
+			this.idsUri = new URI(protocol, null, host, port, null, null, null);
+			this.idsUrl = new URL(protocol, host, port, basePath);
 		} catch (URISyntaxException | MalformedURLException e) {
 			throw new RuntimeException(e);
 		}
@@ -458,7 +459,12 @@ public class IdsClient {
 				}
 				sb.append(e.getKey() + "=" + URLEncoder.encode(e.getValue(), "UTF-8"));
 			}
-			return new URL(url + "?" + sb.toString());
+			url = new URL(url + "?" + sb.toString());
+			if (url.toString().length() > 2048) {
+				throw new BadRequestException("Generated URL is of length "
+						+ url.toString().length() + " which exceeds 2048");
+			}
+			return url;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -571,6 +577,45 @@ public class IdsClient {
 	}
 
 	/**
+	 * Returns size of the datafiles described by the dataSelection. This is not the same as the
+	 * size of a zip file containing these datafiles.
+	 * 
+	 * @param sessionId
+	 *            A valid ICAT session ID
+	 * @param dataSelection
+	 *            A data selection object
+	 * 
+	 * @return the total size in bytes
+	 * 
+	 * @throws BadRequestException
+	 * @throws NotFoundException
+	 * @throws InsufficientPrivilegesException
+	 * @throws InternalException
+	 */
+	public long getSize(String sessionId, DataSelection dataSelection) throws BadRequestException,
+			NotFoundException, InsufficientPrivilegesException, InternalException {
+
+		URIBuilder uriBuilder = getUriBuilder("getSize");
+		uriBuilder.setParameter("sessionId", sessionId);
+		for (Entry<String, String> entry : dataSelection.getParameters().entrySet()) {
+			uriBuilder.setParameter(entry.getKey(), entry.getValue());
+		}
+		URI uri = getUri(uriBuilder);
+
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpGet httpGet = new HttpGet(uri);
+			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+				return Long.parseLong(getString(response));
+			} catch (IOException | InsufficientStorageException | DataNotOnlineException
+					| NotImplementedException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+	}
+
+	/**
 	 * Return the status of the data specified by the dataSelection.
 	 * 
 	 * @param sessionId
@@ -626,7 +671,7 @@ public class IdsClient {
 			URI uri = uriBuilder.build();
 			if (uri.toString().length() > 2048) {
 				throw new BadRequestException("Generated URI is of length "
-						+ uri.toString().length() + " whioch exceeds 2048");
+						+ uri.toString().length() + " which exceeds 2048");
 			}
 			return uri;
 		} catch (URISyntaxException e) {
@@ -635,7 +680,7 @@ public class IdsClient {
 	}
 
 	private URIBuilder getUriBuilder(String path) {
-		return new URIBuilder(idsUri).setPath(basePath + "/" + path);
+		return new URIBuilder(idsUri).setPath(basePath + path);
 
 	}
 
@@ -666,6 +711,62 @@ public class IdsClient {
 				return Boolean.parseBoolean(getString(response));
 			} catch (InsufficientStorageException | DataNotOnlineException
 					| InsufficientPrivilegesException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Returns the readOnly status of the server
+	 * 
+	 * @return true if readonly, else false
+	 * 
+	 * @throws InternalException
+	 */
+	public boolean isReadOnly() throws InternalException {
+		URI uri;
+		try {
+			uri = getUri(getUriBuilder("isReadOnly"));
+		} catch (BadRequestException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpGet httpGet = new HttpGet(uri);
+			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+				return Boolean.parseBoolean(getString(response));
+			} catch (IOException | InsufficientStorageException | DataNotOnlineException
+					| BadRequestException | InsufficientPrivilegesException | NotFoundException
+					| NotImplementedException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Returns the twoLevel status of the server
+	 * 
+	 * @return true if the server uses both main and archive storage, else false
+	 * 
+	 * @throws InternalException
+	 */
+	public boolean isTwoLevel() throws InternalException {
+		URI uri;
+		try {
+			uri = getUri(getUriBuilder("isTwoLevel"));
+		} catch (BadRequestException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpGet httpGet = new HttpGet(uri);
+			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+				return Boolean.parseBoolean(getString(response));
+			} catch (IOException | InsufficientStorageException | DataNotOnlineException
+					| BadRequestException | InsufficientPrivilegesException | NotFoundException
+					| NotImplementedException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {

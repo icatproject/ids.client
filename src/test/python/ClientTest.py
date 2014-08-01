@@ -64,6 +64,15 @@ class ClientTest(unittest.TestCase):
         self.dformat.version = "4.2.0"
         self.dformat.id = service.create(self.sessionId, self.dformat)
         
+    def testIsReadOnly(self):
+        self.assertFalse(self.client.isReadOnly())
+        
+    def testIsTwoLevel(self):
+        if int(sys.argv[1]) == 1:
+            self.assertFalse(self.client.isTwoLevel())
+        else:       
+            self.assertTrue(self.client.isTwoLevel())
+        
     def testGetServiceStatus(self): 
         status = self.client.getServiceStatus(self.sessionId)
         self.assertFalse(status["opsQueue"])
@@ -173,6 +182,7 @@ class ClientTest(unittest.TestCase):
         f = open("a.b")
         dfid = self.client.put(self.sessionId, f, "fred", self.dataset.id, self.dformat.id, "Description")
         f.close()
+        self.assertEquals(10890, self.client.getSize(self.sessionId, datafileIds=[dfid]))
         self.assertEquals("ONLINE", self.client.getStatus(self.sessionId, datafileIds=[dfid]))
         f = self.client.getData(self.sessionId, datafileIds=[dfid])
         self.assertEquals(wibbles, f.read())
