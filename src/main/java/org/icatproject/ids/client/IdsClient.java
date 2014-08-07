@@ -7,6 +7,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -524,6 +525,52 @@ public class IdsClient {
 	}
 
 	/**
+	 * Set a hard link to a data file.
+	 * 
+	 * This is only useful in those cases where the user has direct access to the file system where
+	 * the IDS is storing data. The container in which the IDS is running must be allowed to write
+	 * the link.
+	 * 
+	 * @param sessionId
+	 *            A valid ICAT session ID
+	 * @param datafileId
+	 *            the id of a data file
+	 * @param link
+	 *            the absolute path of a link to be set. This will first be deleted if it already
+	 *            exists.
+	 * @throws BadRequestException
+	 * @throws InsufficientPrivilegesException
+	 * @throws InternalException
+	 * @throws NotFoundException
+	 * @throws DataNotOnlineException
+	 * @throws NotImplementedException
+	 *             if the user does not have direct access to the file system where the IDS is
+	 *             storing data
+	 */
+	public void getLink(String sessionId, long datafileId, Path link) throws BadRequestException,
+			InsufficientPrivilegesException, InternalException, NotFoundException,
+			DataNotOnlineException, NotImplementedException {
+		URI uri = getUri(getUriBuilder("getLink"));
+		List<NameValuePair> formparams = new ArrayList<>();
+		formparams.add(new BasicNameValuePair("sessionId", sessionId));
+		formparams.add(new BasicNameValuePair("datafileId", Long.toString(datafileId)));
+		formparams.add(new BasicNameValuePair("link", link.toString()));
+		formparams.add(new BasicNameValuePair("username", System.getProperty("user.name")));
+
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpPost httpPost = new HttpPost(uri);
+			httpPost.setEntity(new UrlEncodedFormEntity(formparams));
+			try (CloseableHttpResponse response = httpclient.execute(httpPost)) {
+				expectNothing(response);
+			} catch (InsufficientStorageException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+	}
+
+	/**
 	 * Return a ServiceStatus object to understand what the IDS is doing.
 	 * 
 	 * To use this call, the user represented by the sessionId must be in the set of rootUserNames
@@ -536,9 +583,11 @@ public class IdsClient {
 	 * 
 	 * @throws InternalException
 	 * @throws InsufficientPrivilegesException
+	 * @throws NotImplementedException
+	 * @throws
 	 */
 	public ServiceStatus getServiceStatus(String sessionId) throws InternalException,
-			InsufficientPrivilegesException {
+			InsufficientPrivilegesException, NotImplementedException {
 		URIBuilder uriBuilder = getUriBuilder("getServiceStatus");
 		uriBuilder.setParameter("sessionId", sessionId);
 		URI uri;
@@ -568,7 +617,7 @@ public class IdsClient {
 				}
 				return serviceStatus;
 			} catch (InsufficientStorageException | DataNotOnlineException | InternalException
-					| BadRequestException | NotFoundException | NotImplementedException e) {
+					| BadRequestException | NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {
@@ -591,9 +640,12 @@ public class IdsClient {
 	 * @throws NotFoundException
 	 * @throws InsufficientPrivilegesException
 	 * @throws InternalException
+	 * @throws NotImplementedException
+	 * @throws
 	 */
 	public long getSize(String sessionId, DataSelection dataSelection) throws BadRequestException,
-			NotFoundException, InsufficientPrivilegesException, InternalException {
+			NotFoundException, InsufficientPrivilegesException, InternalException,
+			NotImplementedException {
 
 		URIBuilder uriBuilder = getUriBuilder("getSize");
 		uriBuilder.setParameter("sessionId", sessionId);
@@ -607,7 +659,7 @@ public class IdsClient {
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				return Long.parseLong(getString(response));
 			} catch (IOException | InsufficientStorageException | DataNotOnlineException
-					| NotImplementedException e) {
+					| NumberFormatException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {
@@ -724,8 +776,10 @@ public class IdsClient {
 	 * @return true if readonly, else false
 	 * 
 	 * @throws InternalException
+	 * @throws NotImplementedException
+	 * @throws
 	 */
-	public boolean isReadOnly() throws InternalException {
+	public boolean isReadOnly() throws InternalException, NotImplementedException {
 		URI uri;
 		try {
 			uri = getUri(getUriBuilder("isReadOnly"));
@@ -737,8 +791,7 @@ public class IdsClient {
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				return Boolean.parseBoolean(getString(response));
 			} catch (IOException | InsufficientStorageException | DataNotOnlineException
-					| BadRequestException | InsufficientPrivilegesException | NotFoundException
-					| NotImplementedException e) {
+					| BadRequestException | InsufficientPrivilegesException | NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {
@@ -752,8 +805,10 @@ public class IdsClient {
 	 * @return true if the server uses both main and archive storage, else false
 	 * 
 	 * @throws InternalException
+	 * @throws NotImplementedException
+	 * @throws
 	 */
-	public boolean isTwoLevel() throws InternalException {
+	public boolean isTwoLevel() throws InternalException, NotImplementedException {
 		URI uri;
 		try {
 			uri = getUri(getUriBuilder("isTwoLevel"));
@@ -765,8 +820,7 @@ public class IdsClient {
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				return Boolean.parseBoolean(getString(response));
 			} catch (IOException | InsufficientStorageException | DataNotOnlineException
-					| BadRequestException | InsufficientPrivilegesException | NotFoundException
-					| NotImplementedException e) {
+					| BadRequestException | InsufficientPrivilegesException | NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {
@@ -780,8 +834,10 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws NotFoundException
 	 *             If the server gives an unexpected response
+	 * @throws NotImplementedException
+	 * @throws
 	 */
-	public void ping() throws InternalException, NotFoundException {
+	public void ping() throws InternalException, NotFoundException, NotImplementedException {
 		URI uri;
 		try {
 			uri = getUri(getUriBuilder("ping"));
@@ -797,8 +853,7 @@ public class IdsClient {
 					throw new NotFoundException("Server gave invalid response: " + result);
 				}
 			} catch (IOException | InsufficientStorageException | DataNotOnlineException
-					| BadRequestException | InsufficientPrivilegesException | NotFoundException
-					| NotImplementedException e) {
+					| BadRequestException | InsufficientPrivilegesException | NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {

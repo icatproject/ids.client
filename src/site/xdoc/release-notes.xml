@@ -7,7 +7,7 @@
 
     <body>
         <section name="1.1.0">
-            <p>Three new calls added to both java and python APIs
+            <p>Four new calls added to both java and python APIs
             </p>
             <ul>
                 <li>Added call isReadOnly to determine readOnly status.</li>
@@ -15,6 +15,7 @@
                 <li>Added call getSize to determine size of datafiles in a DataSelection. If you are using ICAT 4.3 a bug may cause this to be less
                     than the true value.
                 </li>
+                <li>Added call getLink to establish a hard link to a datafile.</li>
             </ul>
         </section>
         <section name="1.0.3">

@@ -114,6 +114,13 @@ class ClientTest(unittest.TestCase):
             self.fail("Should have thrown exception")
         except ids.IdsException as e:
             self.assertEqual("BadRequestException", e.code)  
+            
+    def testGetLink(self):
+        try:
+            self.client.getLink(self.sessionId, 42L, os.path.join(os.getcwd(), "alink"))
+            self.fail("Should have thrown exception")
+        except ids.IdsException as e:
+            self.assertEqual("InsufficientPrivilegesException", e.code)  
  
     def testIsPrepared(self):
         try:

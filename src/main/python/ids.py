@@ -3,6 +3,7 @@ import httplib
 from urllib import urlencode
 import json
 import zlib
+import getpass
 
 class IdsClient(object):
     
@@ -92,7 +93,7 @@ class IdsClient(object):
         if zipFlag:  parameters["zip"] = "true";
         if compressFlag: parameters["compress"] = "true";
         return self._process("prepareData", parameters, "POST").read()
-    
+       
     def getData(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[], compressFlag=False, zipFlag=False, outname=None, offset=0):
         """
         Stream the requested data
@@ -105,6 +106,17 @@ class IdsClient(object):
         if offset: headers = {"Range": "bytes=" + str(offset) + "-"} 
         else: headers = None
         return self._process("getData", parameters, "GET", headers=headers)
+    
+    def getLink(self, sessionId, datafileId, link):
+        """
+        Set a hard link to a data file.
+      
+        This is only useful in those cases where the user has direct access to the file system where
+        the IDS is storing data. The container in which the IDS is running must be allowed to write
+        the link.
+        """
+        parameters = {"sessionId": sessionId, "datafileId" : datafileId, "link": link, "username": getpass.getuser() }
+        self._process("getLink", parameters, "POST").read()
     
     def getSize(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[]):
         """
