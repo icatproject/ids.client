@@ -107,16 +107,15 @@ class IdsClient(object):
         else: headers = None
         return self._process("getData", parameters, "GET", headers=headers)
     
-    def getLink(self, sessionId, datafileId, link):
+    def getLink(self, sessionId, datafileId):
         """
-        Set a hard link to a data file.
+        Return a hard link to a data file
       
         This is only useful in those cases where the user has direct access to the file system where
-        the IDS is storing data. The container in which the IDS is running must be allowed to write
-        the link.
+        the IDS is storing data. The caller is only granted read access to the file.
         """
-        parameters = {"sessionId": sessionId, "datafileId" : datafileId, "link": link, "username": getpass.getuser() }
-        self._process("getLink", parameters, "POST").read()
+        parameters = {"sessionId": sessionId, "datafileId" : datafileId, "username": getpass.getuser() }
+        return self._process("getLink", parameters, "POST").read()
     
     def getSize(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[]):
         """

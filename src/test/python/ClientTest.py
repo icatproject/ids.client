@@ -117,10 +117,10 @@ class ClientTest(unittest.TestCase):
             
     def testGetLink(self):
         try:
-            self.client.getLink(self.sessionId, 42L, os.path.join(os.getcwd(), "alink"))
+            self.client.getLink(self.sessionId, 42L)
             self.fail("Should have thrown exception")
         except ids.IdsException as e:
-            self.assertEqual("InsufficientPrivilegesException", e.code)  
+            self.assertEqual("NotFoundException", e.code)  
  
     def testIsPrepared(self):
         try:
@@ -194,6 +194,10 @@ class ClientTest(unittest.TestCase):
         f = self.client.getData(self.sessionId, datafileIds=[dfid])
         self.assertEquals(wibbles, f.read())
         f.close()
+        alink = self.client.getLink(self.sessionId, dfid)
+        with open(alink) as f: 
+            self.assertEquals(wibbles, f.read())
+        os.remove(alink)
         pid = self.client.prepareData(self.sessionId, datafileIds=[dfid])
         f = self.client.getPreparedData(pid)
         self.assertEquals(wibbles, f.read())

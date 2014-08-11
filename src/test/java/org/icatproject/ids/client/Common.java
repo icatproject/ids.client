@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 
 import org.icatproject.ids.client.IdsClient.Flag;
@@ -49,9 +48,9 @@ public abstract class Common extends BaseTest {
 		client.getData(sessionId, new DataSelection(), Flag.NONE, null, 0);
 	}
 
-	@Test(expected = InsufficientPrivilegesException.class)
+	@Test(expected = NotFoundException.class)
 	public void testGetLink() throws Exception {
-		client.getLink(sessionId, 42L, Paths.get("alink").toAbsolutePath());
+		client.getLink(sessionId, 42L);
 	}
 
 	@Test

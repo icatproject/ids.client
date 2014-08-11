@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -525,19 +526,18 @@ public class IdsClient {
 	}
 
 	/**
-	 * Set a hard link to a data file.
+	 * Return a hard link to a data file.
 	 * 
 	 * This is only useful in those cases where the user has direct access to the file system where
-	 * the IDS is storing data. The container in which the IDS is running must be allowed to write
-	 * the link.
+	 * the IDS is storing data. The caller is only granted read access to the file.
 	 * 
 	 * @param sessionId
 	 *            A valid ICAT session ID
 	 * @param datafileId
 	 *            the id of a data file
-	 * @param link
-	 *            the absolute path of a link to be set. This will first be deleted if it already
-	 *            exists.
+	 * 
+	 * @return the path of the created link.
+	 * 
 	 * @throws BadRequestException
 	 * @throws InsufficientPrivilegesException
 	 * @throws InternalException
@@ -547,21 +547,20 @@ public class IdsClient {
 	 *             if the user does not have direct access to the file system where the IDS is
 	 *             storing data
 	 */
-	public void getLink(String sessionId, long datafileId, Path link) throws BadRequestException,
+	public Path getLink(String sessionId, long datafileId) throws BadRequestException,
 			InsufficientPrivilegesException, InternalException, NotFoundException,
 			DataNotOnlineException, NotImplementedException {
 		URI uri = getUri(getUriBuilder("getLink"));
 		List<NameValuePair> formparams = new ArrayList<>();
 		formparams.add(new BasicNameValuePair("sessionId", sessionId));
 		formparams.add(new BasicNameValuePair("datafileId", Long.toString(datafileId)));
-		formparams.add(new BasicNameValuePair("link", link.toString()));
 		formparams.add(new BasicNameValuePair("username", System.getProperty("user.name")));
 
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
 			HttpPost httpPost = new HttpPost(uri);
 			httpPost.setEntity(new UrlEncodedFormEntity(formparams));
 			try (CloseableHttpResponse response = httpclient.execute(httpPost)) {
-				expectNothing(response);
+				return Paths.get(getString(response));
 			} catch (InsufficientStorageException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
