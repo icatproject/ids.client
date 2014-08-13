@@ -14,7 +14,7 @@
             <p>You must be logged in with write access to the Python site packages - which normally means as root.</p>
 
 
-            <subsection name="Compatibility">This will work with an IDS version of 1.0.0 or greater.</subsection>
+            <subsection name="Compatibility">This will work with an IDS version of 1.2.0 or greater.</subsection>
 
             <subsection name="Prerequisites">
 
