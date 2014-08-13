@@ -28,24 +28,24 @@ public abstract class Common extends BaseTest {
 		assertTrue(status.getPrepItems().isEmpty());
 	}
 
-	@Test(expected = BadRequestException.class)
+	@Test(expected = NotFoundException.class)
 	public void testGetStatus() throws Exception {
-		client.getStatus(sessionId, new DataSelection());
+		client.getStatus(sessionId, new DataSelection().addDatafile(42L));
 	}
 
-	@Test(expected = BadRequestException.class)
+	@Test(expected = NotFoundException.class)
 	public void testRestore() throws Exception {
-		client.restore(sessionId, new DataSelection());
+		client.restore(sessionId, new DataSelection().addDatafile(42L));
 	}
 
-	@Test(expected = BadRequestException.class)
+	@Test(expected = NotFoundException.class)
 	public void testArchive() throws Exception {
-		client.archive(sessionId, new DataSelection());
+		client.archive(sessionId, new DataSelection().addDatafile(42L));
 	}
 
-	@Test(expected = BadRequestException.class)
+	@Test(expected = NotFoundException.class)
 	public void testGetData() throws Exception {
-		client.getData(sessionId, new DataSelection(), Flag.NONE, null, 0);
+		client.getData(sessionId, new DataSelection().addDatafile(42L), Flag.NONE, null, 0);
 	}
 
 	@Test(expected = NotFoundException.class)

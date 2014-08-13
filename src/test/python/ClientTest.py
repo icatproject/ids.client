@@ -77,21 +77,13 @@ class ClientTest(unittest.TestCase):
         status = self.client.getServiceStatus(self.sessionId)
         self.assertFalse(status["opsQueue"])
         self.assertFalse(status["prepQueue"])
-
-    def testGetStatus(self):
-        try:
-            self.client.getStatus(self.sessionId)
-            self.fail("Should have thrown exception")
-        except ids.IdsException as e:
-            self.assertEqual("BadRequestException", e.code)   
             
-    def testGetStatus2(self):
+    def testGetStatus(self):
         try:
             self.client.getStatus(self.sessionId, datafileIds=[1, 2, 3])
             self.fail("Should have thrown exception")
         except ids.IdsException as e:
             self.assertEqual("NotFoundException", e.code)
-
   
     def testRestore(self):
         try:
@@ -103,17 +95,17 @@ class ClientTest(unittest.TestCase):
             
     def testArchive(self):
         try:
-            self.client.archive(self.sessionId)
+            self.client.archive(self.sessionId, datafileIds=[1, 2, 3])
             self.fail("Should have thrown exception")
         except ids.IdsException as e:
-            self.assertEqual("BadRequestException", e.code)   
+            self.assertEqual("NotFoundException", e.code)   
 
     def testGetData(self):
         try:
-            self.client.getData(self.sessionId, zipFlag=True, outname="fred", offset=50)
+            self.client.getData(self.sessionId, datafileIds=[1], zipFlag=True, outname="fred", offset=50)
             self.fail("Should have thrown exception")
         except ids.IdsException as e:
-            self.assertEqual("BadRequestException", e.code)  
+            self.assertEqual("NotFoundException", e.code)  
             
     def testGetLink(self):
         try:
