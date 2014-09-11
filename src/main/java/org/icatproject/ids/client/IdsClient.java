@@ -2,6 +2,7 @@ package org.icatproject.ids.client;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -17,6 +18,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
+
+import javax.json.Json;
+import javax.json.JsonException;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import javax.json.JsonValue;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -36,11 +43,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Client to communicate with IDS server
@@ -215,12 +217,11 @@ public class IdsClient {
 			}
 			String code;
 			String message;
-			try {
-				ObjectMapper om = new ObjectMapper();
-				JsonNode rootNode = om.readValue(error, JsonNode.class);
-				code = rootNode.get("code").asText();
-				message = rootNode.get("message").asText();
-			} catch (Exception e) {
+			try (JsonReader jsonReader = Json.createReader(new StringReader(error))) {
+				JsonObject json = jsonReader.readObject();
+				code = json.getString("code");
+				message = json.getString("message");
+			} catch (JsonException e) {
 				throw new InternalException("Status code " + rc
 						+ " returned but message not json: " + error);
 			}
@@ -601,20 +602,25 @@ public class IdsClient {
 
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				String result = getString(response);
-				ObjectMapper mapper = new ObjectMapper();
-				JsonNode rootNode = mapper.readValue(result, JsonNode.class);
-				ServiceStatus serviceStatus = new ServiceStatus();
-				for (JsonNode on : (ArrayNode) rootNode.get("opsQueue")) {
-					String dsInfo = ((ObjectNode) on).get("dsInfo").asText();
-					String request = ((ObjectNode) on).get("request").asText();
-					serviceStatus.storeOpItems(dsInfo, request);
+				try (JsonReader jsonReader = Json.createReader(new StringReader(result))) {
+					ServiceStatus serviceStatus = new ServiceStatus();
+					JsonObject rootNode = jsonReader.readObject();
+					for (JsonValue on : rootNode.getJsonArray("opsQueue")) {
+						String dsInfo = ((JsonObject) on).getString("dsInfo");
+						String request = ((JsonObject) on).getString("request");
+						serviceStatus.storeOpItems(dsInfo, request);
+					}
+					for (JsonValue on : rootNode.getJsonArray("prepQueue")) {
+						String id = ((JsonObject) on).getString("id");
+						String state = ((JsonObject) on).getString("state");
+						serviceStatus.storePrepItems(id, state);
+					}
+					return serviceStatus;
+				} catch (JsonException e) {
+					throw new InternalException("TestingClient " + e.getClass() + " "
+							+ e.getMessage() + " from " + result);
 				}
-				for (JsonNode on : (ArrayNode) rootNode.get("prepQueue")) {
-					String id = ((ObjectNode) on).get("id").asText();
-					String state = ((ObjectNode) on).get("state").asText();
-					serviceStatus.storePrepItems(id, state);
-				}
-				return serviceStatus;
+
 			} catch (InsufficientStorageException | DataNotOnlineException | InternalException
 					| BadRequestException | NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
@@ -1013,12 +1019,14 @@ public class IdsClient {
 
 		try (CloseableHttpResponse response = httpclient.execute(httpPut)) {
 			String result = getString(response);
-			ObjectMapper mapper = new ObjectMapper();
-			ObjectNode rootNode = (ObjectNode) mapper.readValue(result, JsonNode.class);
-			if (!rootNode.get("checksum").asText().equals(Long.toString(crc.getValue()))) {
-				throw new InternalException("Error uploading - the checksum was not as expected");
+			try (JsonReader jsonReader = Json.createReader(new StringReader(result))) {
+				JsonObject rootNode = jsonReader.readObject();
+				if (rootNode.getJsonNumber("checksum").longValueExact() != crc.getValue()) {
+					throw new InternalException(
+							"Error uploading - the checksum was not as expected");
+				}
+				return rootNode.getJsonNumber("id").longValueExact();
 			}
-			return Long.parseLong(rootNode.get("id").asText());
 		} catch (IOException e) {
 			throw new InternalException(e.getClass() + " " + e.getMessage());
 		} catch (NumberFormatException e) {
