@@ -13,14 +13,17 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 
 import javax.json.Json;
 import javax.json.JsonException;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
@@ -28,7 +31,6 @@ import javax.json.JsonValue;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
-import org.apache.http.ParseException;
 import org.apache.http.StatusLine;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -79,8 +81,27 @@ public class IdsClient {
 	 */
 	public class ServiceStatus {
 
+		private int lockCount;
+		private Set<Long> lockedDs = new HashSet<>();
 		private Map<String, String> opItems = new HashMap<>();
-		private Map<String, String> prepItems = new HashMap<>();
+
+		/**
+		 * Return the number of locks on groups of datasets.
+		 * 
+		 * @return the number of locks
+		 */
+		public int getLockCount() {
+			return lockCount;
+		}
+
+		/**
+		 * Return the ids of the locked datasets. A dataset may be included in more than one lock.
+		 * 
+		 * @return the ids of the locked datasets.
+		 */
+		public Set<Long> getLockedDs() {
+			return lockedDs;
+		}
 
 		/**
 		 * Return a map from a description of a data set to the requested state.
@@ -91,21 +112,16 @@ public class IdsClient {
 			return opItems;
 		}
 
-		/**
-		 * Return a map from a preparedId to the state of the preparer.
-		 * 
-		 * @return map
-		 */
-		public Map<String, String> getPrepItems() {
-			return prepItems;
+		void setLockedCount(int lockCount) {
+			this.lockCount = lockCount;
+		}
+
+		void storeLockedDs(Long dsId) {
+			lockedDs.add(dsId);
 		}
 
 		void storeOpItems(String dsInfo, String request) {
 			opItems.put(dsInfo, request);
-		}
-
-		void storePrepItems(String id, String state) {
-			prepItems.put(id, state);
 		}
 
 	};
@@ -200,7 +216,7 @@ public class IdsClient {
 	}
 
 	private void checkStatus(HttpResponse response) throws InternalException, BadRequestException,
-			DataNotOnlineException, ParseException, IOException, InsufficientPrivilegesException,
+			DataNotOnlineException, IOException, InsufficientPrivilegesException,
 			NotImplementedException, InsufficientStorageException, NotFoundException {
 		StatusLine status = response.getStatusLine();
 		if (status == null) {
@@ -296,15 +312,42 @@ public class IdsClient {
 	}
 
 	private void expectNothing(CloseableHttpResponse response) throws InternalException,
-			BadRequestException, DataNotOnlineException, ParseException,
-			InsufficientPrivilegesException, NotImplementedException, InsufficientStorageException,
-			NotFoundException, IOException {
+			BadRequestException, DataNotOnlineException, InsufficientPrivilegesException,
+			NotImplementedException, InsufficientStorageException, NotFoundException, IOException {
 		checkStatus(response);
 		HttpEntity entity = response.getEntity();
 		if (entity != null) {
 			if (!EntityUtils.toString(entity).isEmpty()) {
 				throw new InternalException("No http entity expected in response");
 			}
+		}
+	}
+
+	/**
+	 * Get the version of the IDS server
+	 * 
+	 * @return a String with the version of the IDS server
+	 * 
+	 * @throws InternalException
+	 * @throws NotImplementedException
+	 */
+	public String getApiVersion() throws InternalException, NotImplementedException {
+		URI uri;
+		try {
+			uri = getUri(getUriBuilder("getApiVersion"));
+		} catch (BadRequestException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpGet httpGet = new HttpGet(uri);
+			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+				return getString(response);
+			} catch (IOException | InsufficientStorageException | DataNotOnlineException
+					| BadRequestException | InsufficientPrivilegesException | NotFoundException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
 		}
 	}
 
@@ -610,10 +653,10 @@ public class IdsClient {
 						String request = ((JsonObject) on).getString("request");
 						serviceStatus.storeOpItems(dsInfo, request);
 					}
-					for (JsonValue on : rootNode.getJsonArray("prepQueue")) {
-						String id = ((JsonObject) on).getString("id");
-						String state = ((JsonObject) on).getString("state");
-						serviceStatus.storePrepItems(id, state);
+					serviceStatus.setLockedCount(rootNode.getInt("lockCount"));
+					for (JsonValue num : rootNode.getJsonArray("lockedDs")) {
+						Long dsId = ((JsonNumber) num).longValueExact();
+						serviceStatus.storeLockedDs(dsId);
 					}
 					return serviceStatus;
 				} catch (JsonException e) {
@@ -712,9 +755,8 @@ public class IdsClient {
 	}
 
 	private String getString(CloseableHttpResponse response) throws InternalException,
-			BadRequestException, DataNotOnlineException, ParseException,
-			InsufficientPrivilegesException, NotImplementedException, InsufficientStorageException,
-			NotFoundException, IOException {
+			BadRequestException, DataNotOnlineException, InsufficientPrivilegesException,
+			NotImplementedException, InsufficientStorageException, NotFoundException, IOException {
 		checkStatus(response);
 		HttpEntity entity = response.getEntity();
 		if (entity == null) {

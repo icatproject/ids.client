@@ -19,6 +19,12 @@ class IdsClient(object):
         if not path.endswith("/"): path = path + "/"
         self.path = path + "ids/"
         
+    def getApiVersion(self):
+        """
+        Get the version of the server
+        """
+        return self._process("getApiVersion", {}, "GET").read()
+    
     def isReadOnly(self):
         """
         See if the server is configured to be readonly

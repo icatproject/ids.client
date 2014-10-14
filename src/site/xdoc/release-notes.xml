@@ -6,6 +6,14 @@
     </properties>
 
     <body>
+        <section name="1.2.0">
+            <p>Added one new call to both java and python APIs
+            </p>
+            <ul>
+                <li>Added call getApiVersion to get the version of the IDS server.</li>
+                <li>The information returned by getServiceStatus has changed.</li>
+            </ul>
+        </section>
         <section name="1.1.0">
             <p>Four new calls added to both java and python APIs
             </p>

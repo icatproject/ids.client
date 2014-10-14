@@ -67,6 +67,9 @@ class ClientTest(unittest.TestCase):
     def testIsReadOnly(self):
         self.assertFalse(self.client.isReadOnly())
         
+    def testGetApiVersion(self):
+        self.assertTrue(self.client.getApiVersion().startswith("1.3."))
+        
     def testIsTwoLevel(self):
         if int(sys.argv[1]) == 1:
             self.assertFalse(self.client.isTwoLevel())
@@ -76,7 +79,8 @@ class ClientTest(unittest.TestCase):
     def testGetServiceStatus(self): 
         status = self.client.getServiceStatus(self.sessionId)
         self.assertFalse(status["opsQueue"])
-        self.assertFalse(status["prepQueue"])
+        self.assertFalse(status["lockedDs"])
+        self.assertFalse(status["lockCount"])
             
     def testGetStatus(self):
         try:

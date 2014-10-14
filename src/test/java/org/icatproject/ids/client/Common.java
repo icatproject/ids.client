@@ -25,7 +25,13 @@ public abstract class Common extends BaseTest {
 	public void testGetServiceStatus() throws Exception {
 		ServiceStatus status = (client.getServiceStatus(sessionId));
 		assertTrue(status.getOpItems().isEmpty());
-		assertTrue(status.getPrepItems().isEmpty());
+		assertTrue(status.getLockedDs().isEmpty());
+		assertEquals(0, status.getLockCount());
+	}
+
+	@Test
+	public void testGetApiVersion() throws Exception {
+		assertTrue(client.getApiVersion().startsWith("1.3."));
 	}
 
 	@Test(expected = NotFoundException.class)

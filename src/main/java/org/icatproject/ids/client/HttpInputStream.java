@@ -6,7 +6,7 @@ import java.io.IOException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
 
-public class HttpInputStream extends FilterInputStream {
+class HttpInputStream extends FilterInputStream {
 
 	private CloseableHttpResponse response;
 	private CloseableHttpClient httpclient;
