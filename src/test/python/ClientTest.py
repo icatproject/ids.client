@@ -79,7 +79,7 @@ class ClientTest(unittest.TestCase):
     def testGetServiceStatus(self): 
         status = self.client.getServiceStatus(self.sessionId)
         self.assertFalse(status["opsQueue"])
-        self.assertFalse(status["lockedDs"])
+        self.assertFalse(status["lockedIds"])
         self.assertFalse(status["lockCount"])
             
     def testGetStatus(self):
@@ -90,19 +90,25 @@ class ClientTest(unittest.TestCase):
             self.assertEqual("NotFoundException", e.code)
   
     def testRestore(self):
-        try:
+        if int(sys.argv[1]) == 1:
             self.client.restore(self.sessionId, datafileIds=[1, 2, 3])
-            self.fail("Should have thrown exception")
-        except ids.IdsException as e:
-            print e
-            self.assertEqual("NotFoundException", e.code)
+        else:
+            try:
+                self.client.restore(self.sessionId, datafileIds=[1, 2, 3])
+                self.fail("Should have thrown exception")
+            except ids.IdsException as e:
+                print e
+                self.assertEqual("NotFoundException", e.code)
             
     def testArchive(self):
-        try:
-            self.client.archive(self.sessionId, datafileIds=[1, 2, 3])
-            self.fail("Should have thrown exception")
-        except ids.IdsException as e:
-            self.assertEqual("NotFoundException", e.code)   
+        if int(sys.argv[1]) == 1:
+             self.client.archive(self.sessionId, datafileIds=[1, 2, 3])
+        else:
+            try:
+                self.client.archive(self.sessionId, datafileIds=[1, 2, 3])
+                self.fail("Should have thrown exception")
+            except ids.IdsException as e:
+                self.assertEqual("NotFoundException", e.code)   
 
     def testGetData(self):
         try:

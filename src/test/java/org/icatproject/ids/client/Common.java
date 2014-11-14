@@ -39,15 +39,7 @@ public abstract class Common extends BaseTest {
 		client.getStatus(sessionId, new DataSelection().addDatafile(42L));
 	}
 
-	@Test(expected = NotFoundException.class)
-	public void testRestore() throws Exception {
-		client.restore(sessionId, new DataSelection().addDatafile(42L));
-	}
 
-	@Test(expected = NotFoundException.class)
-	public void testArchive() throws Exception {
-		client.archive(sessionId, new DataSelection().addDatafile(42L));
-	}
 
 	@Test(expected = NotFoundException.class)
 	public void testGetData() throws Exception {

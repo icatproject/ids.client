@@ -27,7 +27,17 @@ public class TwoTest extends Common {
 		p.write(bytes);
 		p.close();
 	}
-	
+
+	@Test(expected = NotFoundException.class)
+	public void testRestore() throws Exception {
+		client.restore(sessionId, new DataSelection().addDatafile(42L));
+	}
+
+	@Test(expected = NotFoundException.class)
+	public void testArchive() throws Exception {
+		client.archive(sessionId, new DataSelection().addDatafile(42L));
+	}
+
 	@Test
 	public void python() {
 		ShellCommand sc = new ShellCommand("bash", "-c",

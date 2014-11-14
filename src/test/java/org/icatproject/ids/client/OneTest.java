@@ -27,6 +27,16 @@ public class OneTest extends Common {
 		p.write(bytes);
 		p.close();
 	}
+	
+	@Test
+	public void testRestore() throws Exception {
+		client.restore(sessionId, new DataSelection().addDatafile(42L));
+	}
+
+	@Test
+	public void testArchive() throws Exception {
+		client.archive(sessionId, new DataSelection().addDatafile(42L));
+	}
 
 	@Test
 	public void python() {
