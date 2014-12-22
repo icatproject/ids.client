@@ -2,14 +2,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.icatproject</groupId>
     <artifactId>ids.client</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.2.0</version>
     <name>IDS client</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <repoUrl>http://www.icatproject.org/mvn/repo</repoUrl>
-        <ids.server.version>1.3.0-SNAPSHOT</ids.server.version>
+        <ids.server.version>1.3.0</ids.server.version>
     </properties>
 
     <distributionManagement>
@@ -31,9 +31,9 @@
     </issueManagement>
 
     <scm>
-        <connection>scm:svn:http://icat-data-service.googlecode.com/svn/idsclient/trunk</connection>
-        <developerConnection>scm:svn:https://icat-data-service.googlecode.com/svn/idsclient/trunk</developerConnection>
-        <url>http://code.google.com/p/icat-data-service/source/browse/#svn%2Fidsclient%2Ftrunk</url>
+        <connection>scm:svn:http://icat-data-service.googlecode.com/svn/idsclient/tags/ids.client-1.2.0</connection>
+        <developerConnection>scm:svn:https://icat-data-service.googlecode.com/svn/idsclient/tags/ids.client-1.2.0</developerConnection>
+        <url>http://code.google.com/p/icat-data-service/source/browse/#svn%2Fidsclient%2Ftrunk/tags/ids.client-1.2.0</url>
     </scm>
 
     <licenses>
@@ -78,7 +78,7 @@
         <dependency>
             <groupId>org.icatproject</groupId>
             <artifactId>icat.utils</artifactId>
-            <version>4.7.0-SNAPSHOT</version>
+            <version>4.7.0</version>
         </dependency>
 
         <dependency>
