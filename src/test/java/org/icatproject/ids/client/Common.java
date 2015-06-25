@@ -1,6 +1,7 @@
 package org.icatproject.ids.client;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -31,7 +32,7 @@ public abstract class Common extends BaseTest {
 
 	@Test
 	public void testGetApiVersion() throws Exception {
-		assertTrue(client.getApiVersion().startsWith("1.3."));
+		assertTrue(client.getApiVersion().startsWith("1.4."));
 	}
 
 	@Test(expected = NotFoundException.class)
@@ -39,11 +40,20 @@ public abstract class Common extends BaseTest {
 		client.getStatus(sessionId, new DataSelection().addDatafile(42L));
 	}
 
+	@Test
+	public void testGetIcatUrl() throws Exception {
+		assertNotNull(client.getIcatUrl());
+	}
 
-
+	@SuppressWarnings("deprecation")
+	@Test(expected = NotFoundException.class)
+	public void testGetDataDeprecated() throws Exception {
+		client.getData(sessionId, new DataSelection().addDatafile(42L), Flag.NONE, null, 0);
+	}
+	
 	@Test(expected = NotFoundException.class)
 	public void testGetData() throws Exception {
-		client.getData(sessionId, new DataSelection().addDatafile(42L), Flag.NONE, null, 0);
+		client.getData(sessionId, new DataSelection().addDatafile(42L), Flag.NONE, 0);
 	}
 
 	@Test(expected = NotFoundException.class)
@@ -53,11 +63,8 @@ public abstract class Common extends BaseTest {
 
 	@Test
 	public void testGetDataUrl() {
-		URL url = client.getDataUrl(
-				sessionId,
-				new DataSelection().addDatasets(Arrays.asList(1L, 2L))
-						.addInvestigations(Arrays.asList(3L, 4L)).addDatafile(42L),
-				Flag.ZIP_AND_COMPRESS, "my favourite name");
+		URL url = client.getDataUrl(sessionId, new DataSelection().addDatasets(Arrays.asList(1L, 2L))
+				.addInvestigations(Arrays.asList(3L, 4L)).addDatafile(42L), Flag.ZIP_AND_COMPRESS, "my favourite name");
 		assertEquals(setup.getIdsUrl().getHost(), url.getHost());
 		assertEquals(setup.getIdsUrl().getPort(), url.getPort());
 		assertEquals("/ids/getData", url.getPath());
@@ -99,6 +106,12 @@ public abstract class Common extends BaseTest {
 
 	@Test(expected = NotFoundException.class)
 	public void testGetData2() throws Exception {
+		client.getData(sessionId, 0);
+	}
+	
+	@SuppressWarnings("deprecation")
+	@Test(expected = NotFoundException.class)
+	public void testGetData2Deprecated() throws Exception {
 		client.getData(sessionId, null, 0);
 	}
 

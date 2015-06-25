@@ -68,7 +68,7 @@ class ClientTest(unittest.TestCase):
         self.assertFalse(self.client.isReadOnly())
         
     def testGetApiVersion(self):
-        self.assertTrue(self.client.getApiVersion().startswith("1.3."))
+        self.assertTrue(self.client.getApiVersion().startswith("1.4."))
         
     def testIsTwoLevel(self):
         if int(sys.argv[1]) == 1:
@@ -110,9 +110,16 @@ class ClientTest(unittest.TestCase):
             except ids.IdsException as e:
                 self.assertEqual("NotFoundException", e.code)   
 
-    def testGetData(self):
+    def testGetDataDeprecated(self):
         try:
             self.client.getData(self.sessionId, datafileIds=[1], zipFlag=True, outname="fred", offset=50)
+            self.fail("Should have thrown exception")
+        except ids.IdsException as e:
+            self.assertEqual("NotFoundException", e.code)
+            
+    def testGetData(self):
+        try:
+            self.client.getData(self.sessionId, datafileIds=[1], zipFlag=True, offset=50)
             self.fail("Should have thrown exception")
         except ids.IdsException as e:
             self.assertEqual("NotFoundException", e.code)  
@@ -150,6 +157,9 @@ class ClientTest(unittest.TestCase):
 
     def testPing(self):
         self.client.ping();
+        
+    def testGetIcatUrl(self):
+        self.assertTrue(self.client.getIcatUrl().startswith("http"))
         
     def testGetDataUrl(self):
         url = self.client.getDataUrl(self.sessionId, zipFlag=True, compressFlag=True,

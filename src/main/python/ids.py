@@ -102,13 +102,12 @@ class IdsClient(object):
        
     def getData(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[], compressFlag=False, zipFlag=False, outname=None, offset=0):
         """
-        Stream the requested data
+        Stream the requested data - note that the outname parameter is unused and will be removed in the future.
         """
         parameters = {"sessionId": sessionId}
         _fillParms(parameters, datafileIds, datasetIds, investigationIds)
         if zipFlag:  parameters["zip"] = "true";
         if compressFlag: parameters["compress"] = "true";
-        if outname: parameters["outname"] = outname
         if offset: headers = {"Range": "bytes=" + str(offset) + "-"} 
         else: headers = None
         return self._process("getData", parameters, "GET", headers=headers)
@@ -141,6 +140,12 @@ class IdsClient(object):
         if compressFlag: parameters["compress"] = "true";
         if outname: parameters["outname"] = outname
         return self._getDataUrl(parameters)
+    
+    def getIcatUrl(self):
+        """
+        Get URL of the ICAT to which the IDS authorizes operations on the basis of a sessionId
+        """
+        return self._process("getIcatUrl", {}, "GET").read()
     
     def delete(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[]):
         """

@@ -1,58 +1,78 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document xmlns="http://maven.apache.org/XDOC/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+<document xmlns="http://maven.apache.org/XDOC/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
 
-    <properties>
-        <title>IDS Client Release Notes</title>
-    </properties>
+	<properties>
+		<title>IDS Client Release Notes</title>
+	</properties>
 
-    <body>
-        <section name="1.2.0">
-            <p>Added one new call to both java and python APIs
-            </p>
-            <ul>
-                <li>Added call getApiVersion to get the version of the IDS server.</li>
-                <li>The information returned by getServiceStatus has changed.</li>
-            </ul>
-        </section>
-        <section name="1.1.0">
-            <p>Four new calls added to both java and python APIs
-            </p>
-            <ul>
-                <li>Added call isReadOnly to determine readOnly status.</li>
-                <li>Added call isTwoLevel to determine if two both main and archive storage are in use.</li>
-                <li>Added call getSize to determine size of datafiles in a DataSelection. If you are using ICAT 4.3 a bug may cause this to be less
-                    than the true value.
-                </li>
-                <li>Added call getLink to establish a hard link to a datafile.</li>
-            </ul>
-        </section>
-        <section name="1.0.3">
-            <p>Two bug fixes.
-            </p>
-            <ul>
-                <li>Throw exception if generated URL might fail (MS Explorer limit is 2048 Bytes)</li>
-                <li>Improved error message</li>
-            </ul>
-        </section>
-        <section name="1.0.2">
-            <p>Two small fixes to the python code.
-            </p>
-            <ul>
-                <li>The archive call in the python API now works.</li>
-                <li>The isPrepared call in the python API now works.</li>
-            </ul>
-        </section>
-        <section name="1.0.1">
-            <p>Updated setup script to make the configure step optional.
-            </p>
-            <ul>
-                <li>Updated setup script which now also checks that you have permission to install python site-packages.</li>
-            </ul>
-        </section>
-        <section name="1.0.0">
-            <p>This is the initial release.
-            </p>
-        </section>
+	<body>
+		<section name="1.3.0">
+			<p>Added one new call to both java and python APIs
+			</p>
+			<ul>
+				<li>Added call getIcatUrl to get the Url of the Icat server that the
+					IDS is using.
+				</li>
+				<li>Deprecated calls to getData where filename is specified.</li>
+			</ul>
+		</section>
+		<section name="1.2.0">
+			<p>Added one new call to both java and python APIs
+			</p>
+			<ul>
+				<li>Added call getApiVersion to get the version of the IDS server.
+				</li>
+				<li>The information returned by getServiceStatus has changed.</li>
+			</ul>
+		</section>
+		<section name="1.1.0">
+			<p>Four new calls added to both java and python APIs
+			</p>
+			<ul>
+				<li>Added call isReadOnly to determine readOnly status.</li>
+				<li>Added call isTwoLevel to determine if two both main and archive
+					storage are in use.
+				</li>
+				<li>Added call getSize to determine size of datafiles in a
+					DataSelection. If you are using ICAT 4.3 a bug may cause this to be
+					less
+					than the true value.
+				</li>
+				<li>Added call getLink to establish a hard link to a datafile.</li>
+			</ul>
+		</section>
+		<section name="1.0.3">
+			<p>Two bug fixes.
+			</p>
+			<ul>
+				<li>Throw exception if generated URL might fail (MS Explorer limit
+					is 2048 Bytes)
+				</li>
+				<li>Improved error message</li>
+			</ul>
+		</section>
+		<section name="1.0.2">
+			<p>Two small fixes to the python code.
+			</p>
+			<ul>
+				<li>The archive call in the python API now works.</li>
+				<li>The isPrepared call in the python API now works.</li>
+			</ul>
+		</section>
+		<section name="1.0.1">
+			<p>Updated setup script to make the configure step optional.
+			</p>
+			<ul>
+				<li>Updated setup script which now also checks that you have
+					permission to install python site-packages.
+				</li>
+			</ul>
+		</section>
+		<section name="1.0.0">
+			<p>This is the initial release.
+			</p>
+		</section>
 
-    </body>
+	</body>
 </document>

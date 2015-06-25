@@ -16,8 +16,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 
@@ -95,7 +95,8 @@ public class IdsClient {
 		}
 
 		/**
-		 * Return the ids of the locked datasets. A dataset may be included in more than one lock.
+		 * Return the ids of the locked datasets. A dataset may be included in
+		 * more than one lock.
 		 * 
 		 * @return the ids of the locked datasets.
 		 */
@@ -131,8 +132,8 @@ public class IdsClient {
 	 */
 	public enum Status {
 		/**
-		 * When some or all of the requested data are not on line and restoration has not been
-		 * requested
+		 * When some or all of the requested data are not on line and
+		 * restoration has not been requested
 		 */
 		ARCHIVED,
 
@@ -143,8 +144,8 @@ public class IdsClient {
 		ONLINE,
 
 		/**
-		 * When some or all of the requested data are not on line but otherwise restoration has been
-		 * requested.
+		 * When some or all of the requested data are not on line but otherwise
+		 * restoration has been requested.
 		 */
 		RESTORING
 	};
@@ -192,9 +193,8 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws NotFoundException
 	 */
-	public void archive(String sessionId, DataSelection dataSelection)
-			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
-			InternalException, NotFoundException {
+	public void archive(String sessionId, DataSelection dataSelection) throws NotImplementedException,
+			BadRequestException, InsufficientPrivilegesException, InternalException, NotFoundException {
 
 		URI uri = getUri(getUriBuilder("archive"));
 		List<NameValuePair> formparams = new ArrayList<>();
@@ -216,8 +216,8 @@ public class IdsClient {
 	}
 
 	private void checkStatus(HttpResponse response) throws InternalException, BadRequestException,
-			DataNotOnlineException, IOException, InsufficientPrivilegesException,
-			NotImplementedException, InsufficientStorageException, NotFoundException {
+			DataNotOnlineException, IOException, InsufficientPrivilegesException, NotImplementedException,
+			InsufficientStorageException, NotFoundException {
 		StatusLine status = response.getStatusLine();
 		if (status == null) {
 			throw new InternalException("Status line returned is empty");
@@ -238,8 +238,7 @@ public class IdsClient {
 				code = json.getString("code");
 				message = json.getString("message");
 			} catch (JsonException e) {
-				throw new InternalException("Status code " + rc
-						+ " returned but message not json: " + error);
+				throw new InternalException("Status code " + rc + " returned but message not json: " + error);
 			}
 
 			if (code.equals("BadRequestException")) {
@@ -288,9 +287,9 @@ public class IdsClient {
 	 * @throws NotFoundException
 	 * @throws DataNotOnlineException
 	 */
-	public void delete(String sessionId, DataSelection dataSelection)
-			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
-			InternalException, NotFoundException, DataNotOnlineException {
+	public void delete(String sessionId, DataSelection dataSelection) throws NotImplementedException,
+			BadRequestException, InsufficientPrivilegesException, InternalException, NotFoundException,
+			DataNotOnlineException {
 
 		URIBuilder uriBuilder = getUriBuilder("delete");
 		uriBuilder.addParameter("sessionId", sessionId);
@@ -311,9 +310,9 @@ public class IdsClient {
 		}
 	}
 
-	private void expectNothing(CloseableHttpResponse response) throws InternalException,
-			BadRequestException, DataNotOnlineException, InsufficientPrivilegesException,
-			NotImplementedException, InsufficientStorageException, NotFoundException, IOException {
+	private void expectNothing(CloseableHttpResponse response) throws InternalException, BadRequestException,
+			DataNotOnlineException, InsufficientPrivilegesException, NotImplementedException,
+			InsufficientStorageException, NotFoundException, IOException {
 		checkStatus(response);
 		HttpEntity entity = response.getEntity();
 		if (entity != null) {
@@ -342,8 +341,8 @@ public class IdsClient {
 			HttpGet httpGet = new HttpGet(uri);
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				return getString(response);
-			} catch (IOException | InsufficientStorageException | DataNotOnlineException
-					| BadRequestException | InsufficientPrivilegesException | NotFoundException e) {
+			} catch (IOException | InsufficientStorageException | DataNotOnlineException | BadRequestException
+					| InsufficientPrivilegesException | NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {
@@ -354,6 +353,8 @@ public class IdsClient {
 	/**
 	 * Get the data specified by the dataSelection.
 	 * 
+	 * @deprecated As of release 1.3, replaced by call without outname}
+	 * 
 	 * @param sessionId
 	 *            A valid ICAT session ID
 	 * @param dataSelection
@@ -361,13 +362,13 @@ public class IdsClient {
 	 * @param flags
 	 *            To select packing options
 	 * @param outname
-	 *            The name of the file. If it is in .zip format the .zip extension will be added if
-	 *            not present.
+	 *            The name of the file. If it is in .zip format the .zip
+	 *            extension will be added if not present.
 	 * @param offset
 	 *            Skip this number of bytes in the returned stream
 	 * 
-	 * @return an InputStream to allow the data to be read. Please remember to close the stream when
-	 *         you have finished with it.
+	 * @return an InputStream to allow the data to be read. Please remember to
+	 *         close the stream when you have finished with it.
 	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
@@ -376,10 +377,10 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws DataNotOnlineException
 	 */
-	public InputStream getData(String sessionId, DataSelection dataSelection, Flag flags,
-			String outname, long offset) throws NotImplementedException, BadRequestException,
-			InsufficientPrivilegesException, NotFoundException, InternalException,
-			DataNotOnlineException {
+	@Deprecated
+	public InputStream getData(String sessionId, DataSelection dataSelection, Flag flags, String outname, long offset)
+			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException, NotFoundException,
+			InternalException, DataNotOnlineException {
 		URIBuilder uriBuilder = getUriBuilder("getData");
 		uriBuilder.setParameter("sessionId", sessionId);
 		for (Entry<String, String> entry : dataSelection.getParameters().entrySet()) {
@@ -431,19 +432,19 @@ public class IdsClient {
 	}
 
 	/**
-	 * Get the data using the preparedId returned by a call to prepareData
+	 * Get the data specified by the dataSelection.
 	 * 
-	 * @param preparedId
-	 *            A valid preparedId returned by a call to prepareData
-	 * 
-	 * @param outname
-	 *            The name of the file. If it is in .zip format the .zip extension will be added if
-	 *            not present.
+	 * @param sessionId
+	 *            A valid ICAT session ID
+	 * @param dataSelection
+	 *            A data selection object that must not be empty
+	 * @param flags
+	 *            To select packing options
 	 * @param offset
 	 *            Skip this number of bytes in the returned stream
 	 * 
-	 * @return an InputStream to allow the data to be read. Please remember to close the stream when
-	 *         you have finished with it.
+	 * @return an InputStream to allow the data to be read. Please remember to
+	 *         close the stream when you have finished with it.
 	 * 
 	 * @throws NotImplementedException
 	 * @throws BadRequestException
@@ -452,14 +453,149 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws DataNotOnlineException
 	 */
-	public InputStream getData(String preparedId, String outname, long offset)
-			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
-			NotFoundException, InternalException, DataNotOnlineException {
+	public InputStream getData(String sessionId, DataSelection dataSelection, Flag flags, long offset)
+			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException, NotFoundException,
+			InternalException, DataNotOnlineException {
+		URIBuilder uriBuilder = getUriBuilder("getData");
+		uriBuilder.setParameter("sessionId", sessionId);
+		for (Entry<String, String> entry : dataSelection.getParameters().entrySet()) {
+			uriBuilder.setParameter(entry.getKey(), entry.getValue());
+		}
+
+		if (flags == Flag.ZIP || flags == Flag.ZIP_AND_COMPRESS) {
+			uriBuilder.setParameter("zip", "true");
+		}
+		if (flags == Flag.COMPRESS || flags == Flag.ZIP_AND_COMPRESS) {
+			uriBuilder.setParameter("compress", "true");
+		}
+
+		URI uri = getUri(uriBuilder);
+		CloseableHttpResponse response = null;
+		CloseableHttpClient httpclient = null;
+		HttpGet httpGet = new HttpGet(uri);
+		if (offset != 0) {
+			httpGet.setHeader("Range", "bytes=" + offset + "-");
+		}
+		boolean closeNeeded = true;
+		try {
+			httpclient = HttpClients.createDefault();
+			response = httpclient.execute(httpGet);
+			checkStatus(response);
+			closeNeeded = false;
+			return new HttpInputStream(httpclient, response);
+		} catch (IOException | InsufficientStorageException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		} finally {
+			if (closeNeeded && httpclient != null) {
+				try {
+					if (response != null) {
+						try {
+							response.close();
+						} catch (Exception e) {
+							// Ignore it
+						}
+					}
+					httpclient.close();
+				} catch (IOException e) {
+					// Ignore it
+				}
+			}
+		}
+
+	}
+
+	/**
+	 * Get the data using the preparedId returned by a call to prepareData
+	 * 
+	 * @deprecated As of release 1.3, replaced by call without outname}
+	 * 
+	 * @param preparedId
+	 *            A valid preparedId returned by a call to prepareData
+	 * 
+	 * @param outname
+	 *            The name of the file. If it is in .zip format the .zip
+	 *            extension will be added if not present.
+	 * @param offset
+	 *            Skip this number of bytes in the returned stream
+	 * 
+	 * @return an InputStream to allow the data to be read. Please remember to
+	 *         close the stream when you have finished with it.
+	 * 
+	 * @throws NotImplementedException
+	 * @throws BadRequestException
+	 * @throws InsufficientPrivilegesException
+	 * @throws NotFoundException
+	 * @throws InternalException
+	 * @throws DataNotOnlineException
+	 */
+	@Deprecated
+	public InputStream getData(String preparedId, String outname, long offset) throws NotImplementedException,
+			BadRequestException, InsufficientPrivilegesException, NotFoundException, InternalException,
+			DataNotOnlineException {
 		URIBuilder uriBuilder = getUriBuilder("getData");
 		uriBuilder.setParameter("preparedId", preparedId);
 		if (outname != null) {
 			uriBuilder.setParameter("outname", outname);
 		}
+		URI uri = getUri(uriBuilder);
+
+		CloseableHttpResponse response = null;
+		CloseableHttpClient httpclient = null;
+		HttpGet httpGet = new HttpGet(uri);
+		if (offset != 0) {
+			httpGet.setHeader("Range", "bytes=" + offset + "-");
+		}
+		boolean closeNeeded = true;
+		try {
+			httpclient = HttpClients.createDefault();
+			response = httpclient.execute(httpGet);
+			checkStatus(response);
+			closeNeeded = false;
+			return new HttpInputStream(httpclient, response);
+		} catch (IOException | InsufficientStorageException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		} finally {
+			if (closeNeeded && httpclient != null) {
+				try {
+					if (response != null) {
+						try {
+							response.close();
+						} catch (Exception e) {
+							// Ignore it
+						}
+					}
+					httpclient.close();
+				} catch (IOException e) {
+					// Ignore it
+				}
+			}
+		}
+	}
+
+	/**
+	 * Get the data using the preparedId returned by a call to prepareData
+	 * 
+	 * @param preparedId
+	 *            A valid preparedId returned by a call to prepareData
+	 * 
+	 * @param offset
+	 *            Skip this number of bytes in the returned stream
+	 * 
+	 * @return an InputStream to allow the data to be read. Please remember to
+	 *         close the stream when you have finished with it.
+	 * 
+	 * @throws NotImplementedException
+	 * @throws BadRequestException
+	 * @throws InsufficientPrivilegesException
+	 * @throws NotFoundException
+	 * @throws InternalException
+	 * @throws DataNotOnlineException
+	 */
+	public InputStream getData(String preparedId, long offset) throws NotImplementedException, BadRequestException,
+			InsufficientPrivilegesException, NotFoundException, InternalException, DataNotOnlineException {
+		URIBuilder uriBuilder = getUriBuilder("getData");
+		uriBuilder.setParameter("preparedId", preparedId);
+
 		URI uri = getUri(uriBuilder);
 
 		CloseableHttpResponse response = null;
@@ -507,8 +643,8 @@ public class IdsClient {
 			}
 			url = new URL(url + "?" + sb.toString());
 			if (url.toString().length() > 2048) {
-				throw new BadRequestException("Generated URL is of length "
-						+ url.toString().length() + " which exceeds 2048");
+				throw new BadRequestException("Generated URL is of length " + url.toString().length()
+						+ " which exceeds 2048");
 			}
 			return url;
 		} catch (Exception e) {
@@ -526,8 +662,8 @@ public class IdsClient {
 	 * @param flags
 	 *            To select packing options
 	 * @param outname
-	 *            The name of the file. If it is in .zip format the .zip extension will be added if
-	 *            not present.
+	 *            The name of the file. If it is in .zip format the .zip
+	 *            extension will be added if not present.
 	 * 
 	 * @return the URL to allow the data to be read
 	 */
@@ -548,15 +684,15 @@ public class IdsClient {
 	}
 
 	/**
-	 * Get the URL to retrieve the data specified by the preparedId returned by a call to
-	 * prepareData
+	 * Get the URL to retrieve the data specified by the preparedId returned by
+	 * a call to prepareData
 	 * 
 	 * @param preparedId
 	 *            A valid preparedId returned by a call to prepareData
 	 * 
 	 * @param outname
-	 *            The name of the file. If it is in .zip format the .zip extension will be added if
-	 *            not present.
+	 *            The name of the file. If it is in .zip format the .zip
+	 *            extension will be added if not present.
 	 * 
 	 * @return the URL to allow the data to be read
 	 */
@@ -570,10 +706,36 @@ public class IdsClient {
 	}
 
 	/**
+	 * Return the URL of the ICAT to which the IDS authorizes operations on the
+	 * basis of a sessionId
+	 * 
+	 * @return the requested URL
+	 * 
+	 * @throws InternalException
+	 * @throws NotImplementedException
+	 * @throws BadRequestException
+	 */
+	public URL getIcatUrl() throws InternalException, NotImplementedException, BadRequestException {
+		URI uri = getUri(getUriBuilder("getIcatUrl"));
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpGet httpGet = new HttpGet(uri);
+			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+				return new URL(getString(response));
+			} catch (IOException | InsufficientStorageException | DataNotOnlineException | BadRequestException
+					| InsufficientPrivilegesException | NotFoundException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+	}
+
+	/**
 	 * Return a hard link to a data file.
 	 * 
-	 * This is only useful in those cases where the user has direct access to the file system where
-	 * the IDS is storing data. The caller is only granted read access to the file.
+	 * This is only useful in those cases where the user has direct access to
+	 * the file system where the IDS is storing data. The caller is only granted
+	 * read access to the file.
 	 * 
 	 * @param sessionId
 	 *            A valid ICAT session ID
@@ -588,12 +750,11 @@ public class IdsClient {
 	 * @throws NotFoundException
 	 * @throws DataNotOnlineException
 	 * @throws NotImplementedException
-	 *             if the user does not have direct access to the file system where the IDS is
-	 *             storing data
+	 *             if the user does not have direct access to the file system
+	 *             where the IDS is storing data
 	 */
-	public Path getLink(String sessionId, long datafileId) throws BadRequestException,
-			InsufficientPrivilegesException, InternalException, NotFoundException,
-			DataNotOnlineException, NotImplementedException {
+	public Path getLink(String sessionId, long datafileId) throws BadRequestException, InsufficientPrivilegesException,
+			InternalException, NotFoundException, DataNotOnlineException, NotImplementedException {
 		URI uri = getUri(getUriBuilder("getLink"));
 		List<NameValuePair> formparams = new ArrayList<>();
 		formparams.add(new BasicNameValuePair("sessionId", sessionId));
@@ -616,21 +777,21 @@ public class IdsClient {
 	/**
 	 * Return a ServiceStatus object to understand what the IDS is doing.
 	 * 
-	 * To use this call, the user represented by the sessionId must be in the set of rootUserNames
-	 * defined in the IDS configuration.
+	 * To use this call, the user represented by the sessionId must be in the
+	 * set of rootUserNames defined in the IDS configuration.
 	 * 
 	 * @param sessionId
-	 *            A valid ICAT session ID of a user in the IDS rootUserNames set.
+	 *            A valid ICAT session ID of a user in the IDS rootUserNames
+	 *            set.
 	 * 
 	 * @return a ServiceStatus object
 	 * 
 	 * @throws InternalException
 	 * @throws InsufficientPrivilegesException
 	 * @throws NotImplementedException
-	 * @throws
 	 */
-	public ServiceStatus getServiceStatus(String sessionId) throws InternalException,
-			InsufficientPrivilegesException, NotImplementedException {
+	public ServiceStatus getServiceStatus(String sessionId) throws InternalException, InsufficientPrivilegesException,
+			NotImplementedException {
 		URIBuilder uriBuilder = getUriBuilder("getServiceStatus");
 		uriBuilder.setParameter("sessionId", sessionId);
 		URI uri;
@@ -660,12 +821,11 @@ public class IdsClient {
 					}
 					return serviceStatus;
 				} catch (JsonException e) {
-					throw new InternalException(e.getClass() + " " + e.getMessage() + " from "
-							+ result);
+					throw new InternalException(e.getClass() + " " + e.getMessage() + " from " + result);
 				}
 
-			} catch (InsufficientStorageException | DataNotOnlineException | InternalException
-					| BadRequestException | NotFoundException e) {
+			} catch (InsufficientStorageException | DataNotOnlineException | InternalException | BadRequestException
+					| NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {
@@ -674,8 +834,8 @@ public class IdsClient {
 	}
 
 	/**
-	 * Returns size of the datafiles described by the dataSelection. This is not the same as the
-	 * size of a zip file containing these datafiles.
+	 * Returns size of the datafiles described by the dataSelection. This is not
+	 * the same as the size of a zip file containing these datafiles.
 	 * 
 	 * @param sessionId
 	 *            A valid ICAT session ID
@@ -689,11 +849,9 @@ public class IdsClient {
 	 * @throws InsufficientPrivilegesException
 	 * @throws InternalException
 	 * @throws NotImplementedException
-	 * @throws
 	 */
-	public long getSize(String sessionId, DataSelection dataSelection) throws BadRequestException,
-			NotFoundException, InsufficientPrivilegesException, InternalException,
-			NotImplementedException {
+	public long getSize(String sessionId, DataSelection dataSelection) throws BadRequestException, NotFoundException,
+			InsufficientPrivilegesException, InternalException, NotImplementedException {
 
 		URIBuilder uriBuilder = getUriBuilder("getSize");
 		uriBuilder.setParameter("sessionId", sessionId);
@@ -706,8 +864,7 @@ public class IdsClient {
 			HttpGet httpGet = new HttpGet(uri);
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				return Long.parseLong(getString(response));
-			} catch (IOException | InsufficientStorageException | DataNotOnlineException
-					| NumberFormatException e) {
+			} catch (IOException | InsufficientStorageException | DataNotOnlineException | NumberFormatException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {
@@ -731,9 +888,8 @@ public class IdsClient {
 	 * @throws NotFoundException
 	 * @throws InternalException
 	 */
-	public Status getStatus(String sessionId, DataSelection dataSelection)
-			throws BadRequestException, NotFoundException, InsufficientPrivilegesException,
-			InternalException, NotImplementedException {
+	public Status getStatus(String sessionId, DataSelection dataSelection) throws BadRequestException,
+			NotFoundException, InsufficientPrivilegesException, InternalException, NotImplementedException {
 		URIBuilder uriBuilder = getUriBuilder("getStatus");
 		uriBuilder.setParameter("sessionId", sessionId);
 		for (Entry<String, String> entry : dataSelection.getParameters().entrySet()) {
@@ -754,9 +910,9 @@ public class IdsClient {
 		}
 	}
 
-	private String getString(CloseableHttpResponse response) throws InternalException,
-			BadRequestException, DataNotOnlineException, InsufficientPrivilegesException,
-			NotImplementedException, InsufficientStorageException, NotFoundException, IOException {
+	private String getString(CloseableHttpResponse response) throws InternalException, BadRequestException,
+			DataNotOnlineException, InsufficientPrivilegesException, NotImplementedException,
+			InsufficientStorageException, NotFoundException, IOException {
 		checkStatus(response);
 		HttpEntity entity = response.getEntity();
 		if (entity == null) {
@@ -769,8 +925,8 @@ public class IdsClient {
 		try {
 			URI uri = uriBuilder.build();
 			if (uri.toString().length() > 2048) {
-				throw new BadRequestException("Generated URI is of length "
-						+ uri.toString().length() + " which exceeds 2048");
+				throw new BadRequestException("Generated URI is of length " + uri.toString().length()
+						+ " which exceeds 2048");
 			}
 			return uri;
 		} catch (URISyntaxException e) {
@@ -784,8 +940,8 @@ public class IdsClient {
 	}
 
 	/**
-	 * Returns true if the data identified by the preparedId returned by a call to prepareData is
-	 * ready.
+	 * Returns true if the data identified by the preparedId returned by a call
+	 * to prepareData is ready.
 	 * 
 	 * @param preparedId
 	 *            the id returned by a call to prepareData
@@ -797,8 +953,8 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws NotImplementedException
 	 */
-	public boolean isPrepared(String preparedId) throws BadRequestException, NotFoundException,
-			InternalException, NotImplementedException {
+	public boolean isPrepared(String preparedId) throws BadRequestException, NotFoundException, InternalException,
+			NotImplementedException {
 		URIBuilder uriBuilder = getUriBuilder("isPrepared");
 		uriBuilder.setParameter("preparedId", preparedId);
 		URI uri = getUri(uriBuilder);
@@ -808,8 +964,7 @@ public class IdsClient {
 
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				return Boolean.parseBoolean(getString(response));
-			} catch (InsufficientStorageException | DataNotOnlineException
-					| InsufficientPrivilegesException e) {
+			} catch (InsufficientStorageException | DataNotOnlineException | InsufficientPrivilegesException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {
@@ -824,7 +979,6 @@ public class IdsClient {
 	 * 
 	 * @throws InternalException
 	 * @throws NotImplementedException
-	 * @throws
 	 */
 	public boolean isReadOnly() throws InternalException, NotImplementedException {
 		URI uri;
@@ -837,8 +991,8 @@ public class IdsClient {
 			HttpGet httpGet = new HttpGet(uri);
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				return Boolean.parseBoolean(getString(response));
-			} catch (IOException | InsufficientStorageException | DataNotOnlineException
-					| BadRequestException | InsufficientPrivilegesException | NotFoundException e) {
+			} catch (IOException | InsufficientStorageException | DataNotOnlineException | BadRequestException
+					| InsufficientPrivilegesException | NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {
@@ -853,7 +1007,6 @@ public class IdsClient {
 	 * 
 	 * @throws InternalException
 	 * @throws NotImplementedException
-	 * @throws
 	 */
 	public boolean isTwoLevel() throws InternalException, NotImplementedException {
 		URI uri;
@@ -866,8 +1019,8 @@ public class IdsClient {
 			HttpGet httpGet = new HttpGet(uri);
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				return Boolean.parseBoolean(getString(response));
-			} catch (IOException | InsufficientStorageException | DataNotOnlineException
-					| BadRequestException | InsufficientPrivilegesException | NotFoundException e) {
+			} catch (IOException | InsufficientStorageException | DataNotOnlineException | BadRequestException
+					| InsufficientPrivilegesException | NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {
@@ -882,7 +1035,6 @@ public class IdsClient {
 	 * @throws NotFoundException
 	 *             If the server gives an unexpected response
 	 * @throws NotImplementedException
-	 * @throws
 	 */
 	public void ping() throws InternalException, NotFoundException, NotImplementedException {
 		URI uri;
@@ -899,8 +1051,8 @@ public class IdsClient {
 				if (!result.equals("IdsOK")) {
 					throw new NotFoundException("Server gave invalid response: " + result);
 				}
-			} catch (IOException | InsufficientStorageException | DataNotOnlineException
-					| BadRequestException | InsufficientPrivilegesException | NotFoundException e) {
+			} catch (IOException | InsufficientStorageException | DataNotOnlineException | BadRequestException
+					| InsufficientPrivilegesException | NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
 		} catch (IOException e) {
@@ -927,8 +1079,8 @@ public class IdsClient {
 	 * @throws InternalException
 	 */
 	public String prepareData(String sessionId, DataSelection dataSelection, Flag flags)
-			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
-			NotFoundException, InternalException {
+			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException, NotFoundException,
+			InternalException {
 		URI uri = getUri(getUriBuilder("prepareData"));
 		List<NameValuePair> formparams = new ArrayList<>();
 		formparams.add(new BasicNameValuePair("sessionId", sessionId));
@@ -956,8 +1108,9 @@ public class IdsClient {
 	}
 
 	/**
-	 * Put the data in the inputStream into a data file and catalogue it. The client generates a
-	 * checksum which is compared to that produced by the server to detect any transmission errors.
+	 * Put the data in the inputStream into a data file and catalogue it. The
+	 * client generates a checksum which is compared to that produced by the
+	 * server to detect any transmission errors.
 	 * 
 	 * @param sessionId
 	 *            A valid ICAT session ID
@@ -968,7 +1121,8 @@ public class IdsClient {
 	 * @param datasetId
 	 *            the id of the ICAT "Dataset" which should own the data file
 	 * @param datafileFormatId
-	 *            the id of the ICAT "DatafileForat" to be associated with the data file
+	 *            the id of the ICAT "DatafileForat" to be associated with the
+	 *            data file
 	 * @param description
 	 *            Free text to associate with the data file (may be null)
 	 * 
@@ -982,17 +1136,17 @@ public class IdsClient {
 	 * @throws DataNotOnlineException
 	 * @throws InsufficientStorageException
 	 */
-	public Long put(String sessionId, InputStream inputStream, String name, long datasetId,
-			long datafileFormatId, String description) throws BadRequestException,
-			NotFoundException, InternalException, InsufficientPrivilegesException,
-			NotImplementedException, DataNotOnlineException, InsufficientStorageException {
-		return put(sessionId, inputStream, name, datasetId, datafileFormatId, description, null,
-				null, null);
+	public Long put(String sessionId, InputStream inputStream, String name, long datasetId, long datafileFormatId,
+			String description) throws BadRequestException, NotFoundException, InternalException,
+			InsufficientPrivilegesException, NotImplementedException, DataNotOnlineException,
+			InsufficientStorageException {
+		return put(sessionId, inputStream, name, datasetId, datafileFormatId, description, null, null, null);
 	}
 
 	/**
-	 * Put the data in the inputStream into a data file and catalogue it. The client generates a
-	 * checksum which is compared to that produced by the server to detect any transmission errors.
+	 * Put the data in the inputStream into a data file and catalogue it. The
+	 * client generates a checksum which is compared to that produced by the
+	 * server to detect any transmission errors.
 	 * 
 	 * @param sessionId
 	 *            A valid ICAT session ID
@@ -1003,18 +1157,22 @@ public class IdsClient {
 	 * @param datasetId
 	 *            the id of the ICAT "Dataset" which should own the data file
 	 * @param datafileFormatId
-	 *            the id of the ICAT "DatafileForat" to be associated with the data file
+	 *            the id of the ICAT "DatafileForat" to be associated with the
+	 *            data file
 	 * @param description
 	 *            Free text to associate with the data file. (may be null)
 	 * @param doi
-	 *            The Digital Object Identifier to associate with the data file. (may be null)
+	 *            The Digital Object Identifier to associate with the data file.
+	 *            (may be null)
 	 * @param datafileCreateTime
-	 *            the time to record as the creation time of the datafile. If null the current time
-	 *            as known to the IDS server will be stored.
+	 *            the time to record as the creation time of the datafile. If
+	 *            null the current time as known to the IDS server will be
+	 *            stored.
 	 * @param datafileModTime
-	 *            the time to record as the modification time of the datafile. If null the value of
-	 *            the datafileCreateTime or the current time as known to the IDS server if that
-	 *            value is also null will be stored.
+	 *            the time to record as the modification time of the datafile.
+	 *            If null the value of the datafileCreateTime or the current
+	 *            time as known to the IDS server if that value is also null
+	 *            will be stored.
 	 * 
 	 * @return the ICAT id of the "Datafile" object created.
 	 * 
@@ -1026,11 +1184,10 @@ public class IdsClient {
 	 * @throws DataNotOnlineException
 	 * @throws InsufficientStorageException
 	 */
-	public Long put(String sessionId, InputStream inputStream, String name, long datasetId,
-			long datafileFormatId, String description, String doi, Date datafileCreateTime,
-			Date datafileModTime) throws BadRequestException, NotFoundException, InternalException,
-			InsufficientPrivilegesException, NotImplementedException, DataNotOnlineException,
-			InsufficientStorageException {
+	public Long put(String sessionId, InputStream inputStream, String name, long datasetId, long datafileFormatId,
+			String description, String doi, Date datafileCreateTime, Date datafileModTime) throws BadRequestException,
+			NotFoundException, InternalException, InsufficientPrivilegesException, NotImplementedException,
+			DataNotOnlineException, InsufficientStorageException {
 		if (inputStream == null) {
 			throw new BadRequestException("Input stream is null");
 		}
@@ -1047,8 +1204,7 @@ public class IdsClient {
 			uriBuilder.setParameter("doi", doi);
 		}
 		if (datafileCreateTime != null) {
-			uriBuilder.setParameter("datafileCreateTime",
-					Long.toString(datafileCreateTime.getTime()));
+			uriBuilder.setParameter("datafileCreateTime", Long.toString(datafileCreateTime.getTime()));
 		}
 		if (datafileModTime != null) {
 			uriBuilder.setParameter("datafileModTime", Long.toString(datafileModTime.getTime()));
@@ -1064,8 +1220,7 @@ public class IdsClient {
 			try (JsonReader jsonReader = Json.createReader(new StringReader(result))) {
 				JsonObject rootNode = jsonReader.readObject();
 				if (rootNode.getJsonNumber("checksum").longValueExact() != crc.getValue()) {
-					throw new InternalException(
-							"Error uploading - the checksum was not as expected");
+					throw new InternalException("Error uploading - the checksum was not as expected");
 				}
 				return rootNode.getJsonNumber("id").longValueExact();
 			}
@@ -1091,9 +1246,8 @@ public class IdsClient {
 	 * @throws InternalException
 	 * @throws NotFoundException
 	 */
-	public void restore(String sessionId, DataSelection dataSelection)
-			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException,
-			InternalException, NotFoundException {
+	public void restore(String sessionId, DataSelection dataSelection) throws NotImplementedException,
+			BadRequestException, InsufficientPrivilegesException, InternalException, NotFoundException {
 
 		URI uri = getUri(getUriBuilder("restore"));
 		List<NameValuePair> formparams = new ArrayList<>();
