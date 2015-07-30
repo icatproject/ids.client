@@ -112,6 +112,15 @@ class IdsClient(object):
         else: headers = None
         return self._process("getData", parameters, "GET", headers=headers)
     
+    def getDatafileIds(self, sessionId, datafileIds=[], datasetIds=[], investigationIds=[]):
+        """
+        Return the list of data file id values specified.
+        """
+        parameters = {"sessionId": sessionId}
+        _fillParms(parameters, datafileIds, datasetIds, investigationIds)
+        result = self._process("getDatafileIds", parameters, "GET").read()
+        return json.loads(result)["ids"]
+    
     def getLink(self, sessionId, datafileId):
         """
         Return a hard link to a data file
@@ -164,6 +173,14 @@ class IdsClient(object):
         if offset: headers = {"Range": "bytes=" + str(offset) + "-"}
         else: headers = None
         return self._process("getData", parameters, "GET", headers=headers)
+    
+    def getPreparedDatafileIds(self, preparedId):
+        """
+        Get the list of data file id values using the preparedId returned by a call to prepareData
+        """
+        parameters = {"preparedId": preparedId}
+        result = self._process("getDatafileIds", parameters, "GET").read()
+        return json.loads(result)["ids"]
     
     def getPreparedDataUrl(self, preparedId, outname=None):
         """

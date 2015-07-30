@@ -188,10 +188,15 @@ public class IdsClient {
 	 *            A data selection object that must not be empty
 	 * 
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws NotFoundException
+	 *             if some part of the data is not known to ICAT.
 	 */
 	public void archive(String sessionId, DataSelection dataSelection) throws NotImplementedException,
 			BadRequestException, InsufficientPrivilegesException, InternalException, NotFoundException {
@@ -281,11 +286,17 @@ public class IdsClient {
 	 *            A data selection object that must not be empty
 	 * 
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws NotFoundException
+	 *             if some part of the data is not known to ICAT
 	 * @throws DataNotOnlineException
+	 *             if some of the data are not online.
 	 */
 	public void delete(String sessionId, DataSelection dataSelection) throws NotImplementedException,
 			BadRequestException, InsufficientPrivilegesException, InternalException, NotFoundException,
@@ -328,7 +339,9 @@ public class IdsClient {
 	 * @return a String with the version of the IDS server
 	 * 
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 */
 	public String getApiVersion() throws InternalException, NotImplementedException {
 		URI uri;
@@ -371,11 +384,17 @@ public class IdsClient {
 	 *         close the stream when you have finished with it.
 	 * 
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws NotFoundException
+	 *             if some part of the data is not known to ICAT
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws DataNotOnlineException
+	 *             if some of the data are not online.
 	 */
 	@Deprecated
 	public InputStream getData(String sessionId, DataSelection dataSelection, Flag flags, String outname, long offset)
@@ -447,11 +466,17 @@ public class IdsClient {
 	 *         close the stream when you have finished with it.
 	 * 
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws NotFoundException
+	 *             if some part of the data is not known to ICAT.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws DataNotOnlineException
+	 *             if some of the data are not online.
 	 */
 	public InputStream getData(String sessionId, DataSelection dataSelection, Flag flags, long offset)
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException, NotFoundException,
@@ -522,11 +547,17 @@ public class IdsClient {
 	 *         close the stream when you have finished with it.
 	 * 
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws NotFoundException
+	 *             if the preparedId is not recognised.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws DataNotOnlineException
+	 *             if some of the data are not online.
 	 */
 	@Deprecated
 	public InputStream getData(String preparedId, String outname, long offset) throws NotImplementedException,
@@ -585,11 +616,17 @@ public class IdsClient {
 	 *         close the stream when you have finished with it.
 	 * 
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws NotFoundException
+	 *             if the preparedId is not recognised.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws DataNotOnlineException
+	 *             if some of the data are not online.
 	 */
 	public InputStream getData(String preparedId, long offset) throws NotImplementedException, BadRequestException,
 			InsufficientPrivilegesException, NotFoundException, InternalException, DataNotOnlineException {
@@ -712,8 +749,11 @@ public class IdsClient {
 	 * @return the requested URL
 	 * 
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 */
 	public URL getIcatUrl() throws InternalException, NotImplementedException, BadRequestException {
 		URI uri = getUri(getUriBuilder("getIcatUrl"));
@@ -745,13 +785,19 @@ public class IdsClient {
 	 * @return the path of the created link.
 	 * 
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws NotFoundException
+	 *             if the data file is not known to ICAT.
 	 * @throws DataNotOnlineException
+	 *             if the data file is not online.
 	 * @throws NotImplementedException
-	 *             if the user does not have direct access to the file system
-	 *             where the IDS is storing data
+	 *             if the operation has not been implemented. if the user does
+	 *             not have direct access to the file system where the IDS is
+	 *             storing data
 	 */
 	public Path getLink(String sessionId, long datafileId) throws BadRequestException, InsufficientPrivilegesException,
 			InternalException, NotFoundException, DataNotOnlineException, NotImplementedException {
@@ -787,8 +833,11 @@ public class IdsClient {
 	 * @return a ServiceStatus object
 	 * 
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 */
 	public ServiceStatus getServiceStatus(String sessionId) throws InternalException, InsufficientPrivilegesException,
 			NotImplementedException {
@@ -845,10 +894,15 @@ public class IdsClient {
 	 * @return the total size in bytes
 	 * 
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws NotFoundException
+	 *             if some part of the data is not known to ICAT.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 */
 	public long getSize(String sessionId, DataSelection dataSelection) throws BadRequestException, NotFoundException,
 			InsufficientPrivilegesException, InternalException, NotImplementedException {
@@ -883,10 +937,15 @@ public class IdsClient {
 	 * @return the status
 	 * 
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws NotFoundException
+	 *             if some part of the data is not known to ICAT.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 */
 	public Status getStatus(String sessionId, DataSelection dataSelection) throws BadRequestException,
 			NotFoundException, InsufficientPrivilegesException, InternalException, NotImplementedException {
@@ -949,9 +1008,13 @@ public class IdsClient {
 	 * @return true if ready otherwise false.
 	 * 
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws NotFoundException
+	 *             if the preparedId is not known to ICAT.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 */
 	public boolean isPrepared(String preparedId) throws BadRequestException, NotFoundException, InternalException,
 			NotImplementedException {
@@ -978,7 +1041,9 @@ public class IdsClient {
 	 * @return true if readonly, else false
 	 * 
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 */
 	public boolean isReadOnly() throws InternalException, NotImplementedException {
 		URI uri;
@@ -991,7 +1056,7 @@ public class IdsClient {
 			HttpGet httpGet = new HttpGet(uri);
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				return Boolean.parseBoolean(getString(response));
-			} catch (IOException | InsufficientStorageException | DataNotOnlineException | BadRequestException
+			} catch (InsufficientStorageException | DataNotOnlineException | BadRequestException
 					| InsufficientPrivilegesException | NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
@@ -1006,7 +1071,9 @@ public class IdsClient {
 	 * @return true if the server uses both main and archive storage, else false
 	 * 
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 */
 	public boolean isTwoLevel() throws InternalException, NotImplementedException {
 		URI uri;
@@ -1032,11 +1099,11 @@ public class IdsClient {
 	 * Check that the server is alive and is an IDS server
 	 * 
 	 * @throws InternalException
-	 * @throws NotFoundException
-	 *             If the server gives an unexpected response
+	 *             if some unexpected problem should occur.
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 */
-	public void ping() throws InternalException, NotFoundException, NotImplementedException {
+	public void ping() throws InternalException, NotImplementedException {
 		URI uri;
 		try {
 			uri = getUri(getUriBuilder("ping"));
@@ -1049,9 +1116,9 @@ public class IdsClient {
 			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 				String result = getString(response);
 				if (!result.equals("IdsOK")) {
-					throw new NotFoundException("Server gave invalid response: " + result);
+					throw new InternalException("Server gave invalid response: " + result);
 				}
-			} catch (IOException | InsufficientStorageException | DataNotOnlineException | BadRequestException
+			} catch (InsufficientStorageException | DataNotOnlineException | BadRequestException
 					| InsufficientPrivilegesException | NotFoundException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}
@@ -1073,10 +1140,15 @@ public class IdsClient {
 	 * @return a prepareId to be used in calls to getData and getStatus
 	 * 
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws NotFoundException
+	 *             if a part of the data is not known to ICAT.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 */
 	public String prepareData(String sessionId, DataSelection dataSelection, Flag flags)
 			throws NotImplementedException, BadRequestException, InsufficientPrivilegesException, NotFoundException,
@@ -1119,22 +1191,29 @@ public class IdsClient {
 	 * @param name
 	 *            the name to associate with the data file
 	 * @param datasetId
-	 *            the id of the ICAT "Dataset" which should own the data file
+	 *            the id of the ICAT data set which should own the data file
 	 * @param datafileFormatId
 	 *            the id of the ICAT "DatafileForat" to be associated with the
 	 *            data file
 	 * @param description
 	 *            Free text to associate with the data file (may be null)
 	 * 
-	 * @return the ICAT id of the "Datafile" object created
+	 * @return the ICAT id of the data file object created
 	 * 
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws NotFoundException
+	 *             if the data set with an id of datasetId is not known to ICAT.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws DataNotOnlineException
+	 *             if the data set, datasetId, is not online.
 	 * @throws InsufficientStorageException
+	 *             if there is insufficient storage space to store the file.
 	 */
 	public Long put(String sessionId, InputStream inputStream, String name, long datasetId, long datafileFormatId,
 			String description) throws BadRequestException, NotFoundException, InternalException,
@@ -1155,9 +1234,9 @@ public class IdsClient {
 	 * @param name
 	 *            the name to associate with the data file
 	 * @param datasetId
-	 *            the id of the ICAT "Dataset" which should own the data file
+	 *            the id of the ICAT data set which should own the data file
 	 * @param datafileFormatId
-	 *            the id of the ICAT "DatafileForat" to be associated with the
+	 *            the id of the ICAT "DatafileFormat" to be associated with the
 	 *            data file
 	 * @param description
 	 *            Free text to associate with the data file. (may be null)
@@ -1165,24 +1244,31 @@ public class IdsClient {
 	 *            The Digital Object Identifier to associate with the data file.
 	 *            (may be null)
 	 * @param datafileCreateTime
-	 *            the time to record as the creation time of the datafile. If
+	 *            the time to record as the creation time of the data file. If
 	 *            null the current time as known to the IDS server will be
 	 *            stored.
 	 * @param datafileModTime
-	 *            the time to record as the modification time of the datafile.
+	 *            the time to record as the modification time of the data file.
 	 *            If null the value of the datafileCreateTime or the current
 	 *            time as known to the IDS server if that value is also null
 	 *            will be stored.
 	 * 
-	 * @return the ICAT id of the "Datafile" object created.
+	 * @return the ICAT id of the data file object created.
 	 * 
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws NotFoundException
+	 *             if the data set with id datasetId is not known to ICAT.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws DataNotOnlineException
+	 *             if the data set, datasetId, is not online.
 	 * @throws InsufficientStorageException
+	 *             if there is insufficient storage space to store the file.
 	 */
 	public Long put(String sessionId, InputStream inputStream, String name, long datasetId, long datafileFormatId,
 			String description, String doi, Date datafileCreateTime, Date datafileModTime) throws BadRequestException,
@@ -1241,10 +1327,15 @@ public class IdsClient {
 	 *            A data selection object that must not be empty
 	 * 
 	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
 	 * @throws BadRequestException
+	 *             if an argument is invalid.
 	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
 	 * @throws InternalException
+	 *             if some unexpected problem should occur.
 	 * @throws NotFoundException
+	 *             if some part of the data is not known to ICAT.
 	 */
 	public void restore(String sessionId, DataSelection dataSelection) throws NotImplementedException,
 			BadRequestException, InsufficientPrivilegesException, InternalException, NotFoundException {
@@ -1261,6 +1352,113 @@ public class IdsClient {
 			httpPost.setEntity(entity);
 			try (CloseableHttpResponse response = httpclient.execute(httpPost)) {
 				expectNothing(response);
+			} catch (InsufficientStorageException | DataNotOnlineException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Return list of id values of data files included in the preparedId
+	 * returned by a call to prepareData
+	 * 
+	 * @param preparedId
+	 *            A valid preparedId returned by a call to prepareData
+	 * 
+	 * @return a list of id values
+	 * 
+	 * @throws InternalException
+	 *             if some unexpected problem should occur.
+	 * @throws BadRequestException
+	 *             if an argument is invalid.
+	 * @throws NotFoundException
+	 *             if the preparedId is not known to ICAT.
+	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
+	 */
+	public List<Long> getDatafileIds(String preparedId) throws InternalException, BadRequestException,
+			NotFoundException, NotImplementedException {
+
+		URIBuilder uriBuilder = getUriBuilder("getDatafileIds");
+		uriBuilder.setParameter("preparedId", preparedId);
+		URI uri = getUri(uriBuilder);
+
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpGet httpGet = new HttpGet(uri);
+
+			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+				String result = getString(response);
+				try (JsonReader jsonReader = Json.createReader(new StringReader(result))) {
+
+					JsonObject rootNode = jsonReader.readObject();
+					List<Long> ids = new ArrayList<>();
+					for (JsonValue num : rootNode.getJsonArray("ids")) {
+						Long id = ((JsonNumber) num).longValueExact();
+						ids.add(id);
+					}
+					return ids;
+				} catch (JsonException e) {
+					throw new InternalException(e.getClass() + " " + e.getMessage() + " from " + result);
+				}
+
+			} catch (InsufficientStorageException | DataNotOnlineException | InsufficientPrivilegesException e) {
+				throw new InternalException(e.getClass() + " " + e.getMessage());
+			}
+		} catch (IOException e) {
+			throw new InternalException(e.getClass() + " " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Return list of id values of data files specified by the dataSelection.
+	 * 
+	 * @param sessionId
+	 *            A valid ICAT session ID
+	 * @param data
+	 *            A data selection object
+	 * 
+	 * @return a list of id values
+	 * 
+	 * @throws InternalException
+	 *             if some unexpected problem should occur.
+	 * @throws BadRequestException
+	 *             if an argument is invalid.
+	 * @throws NotFoundException
+	 *             if some part of the data is not known to ICAT.
+	 * @throws NotImplementedException
+	 *             if the operation has not been implemented.
+	 * @throws InsufficientPrivilegesException
+	 *             if your are not authorized to perform the operation.
+	 */
+	public List<Long> getDatafileIds(String sessionId, DataSelection data) throws InternalException,
+			BadRequestException, NotFoundException, NotImplementedException, InsufficientPrivilegesException {
+		URIBuilder uriBuilder = getUriBuilder("getDatafileIds");
+		uriBuilder.setParameter("sessionId", sessionId);
+		for (Entry<String, String> entry : data.getParameters().entrySet()) {
+			uriBuilder.setParameter(entry.getKey(), entry.getValue());
+		}
+		URI uri = getUri(uriBuilder);
+
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpGet httpGet = new HttpGet(uri);
+
+			try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+				String result = getString(response);
+				try (JsonReader jsonReader = Json.createReader(new StringReader(result))) {
+
+					JsonObject rootNode = jsonReader.readObject();
+					List<Long> ids = new ArrayList<>();
+					for (JsonValue num : rootNode.getJsonArray("ids")) {
+						Long id = ((JsonNumber) num).longValueExact();
+						ids.add(id);
+					}
+					return ids;
+				} catch (JsonException e) {
+					throw new InternalException(e.getClass() + " " + e.getMessage() + " from " + result);
+				}
+
 			} catch (InsufficientStorageException | DataNotOnlineException e) {
 				throw new InternalException(e.getClass() + " " + e.getMessage());
 			}

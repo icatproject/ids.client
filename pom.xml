@@ -11,7 +11,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<repoUrl>http://www.icatproject.org/mvn/repo</repoUrl>
-		<ids.server.version>1.4.0-SNAPSHOT</ids.server.version>
+		<ids.server.version>1.5.0-SNAPSHOT</ids.server.version>
 		<project.scm.id>github</project.scm.id>
 	</properties>
 

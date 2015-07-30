@@ -27,7 +27,7 @@ public class OneTest extends Common {
 		p.write(bytes);
 		p.close();
 	}
-	
+
 	@Test
 	public void testRestore() throws Exception {
 		client.restore(sessionId, new DataSelection().addDatafile(42L));

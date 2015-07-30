@@ -68,7 +68,7 @@ class ClientTest(unittest.TestCase):
         self.assertFalse(self.client.isReadOnly())
         
     def testGetApiVersion(self):
-        self.assertTrue(self.client.getApiVersion().startswith("1.4."))
+        self.assertTrue(self.client.getApiVersion().startswith("1.5."))
         
     def testIsTwoLevel(self):
         if int(sys.argv[1]) == 1:
@@ -97,7 +97,6 @@ class ClientTest(unittest.TestCase):
                 self.client.restore(self.sessionId, datafileIds=[1, 2, 3])
                 self.fail("Should have thrown exception")
             except ids.IdsException as e:
-                print e
                 self.assertEqual("NotFoundException", e.code)
             
     def testArchive(self):
@@ -122,7 +121,14 @@ class ClientTest(unittest.TestCase):
             self.client.getData(self.sessionId, datafileIds=[1], zipFlag=True, offset=50)
             self.fail("Should have thrown exception")
         except ids.IdsException as e:
-            self.assertEqual("NotFoundException", e.code)  
+            self.assertEqual("NotFoundException", e.code)
+            
+    def testGetDatafileIds(self):
+        try:
+            self.client.getDatafileIds(self.sessionId, datafileIds=[1])
+            self.fail("Should have thrown exception")
+        except ids.IdsException as e:
+            self.assertEqual("NotFoundException", e.code)    
             
     def testGetLink(self):
         try:
@@ -143,6 +149,14 @@ class ClientTest(unittest.TestCase):
         try:
             preparedId = self.sessionId
             self.client.getPreparedData(preparedId)
+            self.fail("Should have thrown exception")
+        except ids.IdsException as e:
+            self.assertEqual("NotFoundException", e.code) 
+            
+    def testGetPreparedDatafileIds(self):
+        try:
+            preparedId = self.sessionId
+            self.client.getPreparedDatafileIds(preparedId)
             self.fail("Should have thrown exception")
         except ids.IdsException as e:
             self.assertEqual("NotFoundException", e.code) 
@@ -206,11 +220,17 @@ class ClientTest(unittest.TestCase):
         f = self.client.getData(self.sessionId, datafileIds=[dfid])
         self.assertEquals(wibbles, f.read())
         f.close()
+        idList = self.client.getDatafileIds(self.sessionId, datafileIds=[dfid])
+        self.assertEquals(1, len(idList))
+        self.assertTrue(dfid in idList)
         alink = self.client.getLink(self.sessionId, dfid)
         with open(alink) as f: 
             self.assertEquals(wibbles, f.read())
         os.remove(alink)
         pid = self.client.prepareData(self.sessionId, datafileIds=[dfid])
+        idList = self.client.getPreparedDatafileIds(pid)
+        self.assertEquals(1, len(idList))
+        self.assertTrue(dfid in idList)
         f = self.client.getPreparedData(pid)
         self.assertEquals(wibbles, f.read())
         f.close()

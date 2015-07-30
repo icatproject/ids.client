@@ -32,7 +32,7 @@ public abstract class Common extends BaseTest {
 
 	@Test
 	public void testGetApiVersion() throws Exception {
-		assertTrue(client.getApiVersion().startsWith("1.4."));
+		assertTrue(client.getApiVersion().startsWith("1.5."));
 	}
 
 	@Test(expected = NotFoundException.class)
@@ -50,7 +50,7 @@ public abstract class Common extends BaseTest {
 	public void testGetDataDeprecated() throws Exception {
 		client.getData(sessionId, new DataSelection().addDatafile(42L), Flag.NONE, null, 0);
 	}
-	
+
 	@Test(expected = NotFoundException.class)
 	public void testGetData() throws Exception {
 		client.getData(sessionId, new DataSelection().addDatafile(42L), Flag.NONE, 0);
@@ -108,7 +108,7 @@ public abstract class Common extends BaseTest {
 	public void testGetData2() throws Exception {
 		client.getData(sessionId, 0);
 	}
-	
+
 	@SuppressWarnings("deprecation")
 	@Test(expected = NotFoundException.class)
 	public void testGetData2Deprecated() throws Exception {
@@ -132,6 +132,16 @@ public abstract class Common extends BaseTest {
 		InputStream is = Files.newInputStream(new File("a.b").toPath());
 		client.put(sessionId, is, "fred", 1L, 2L, "Description", null, null, null);
 		is.close();
+	}
+
+	@Test(expected = BadRequestException.class)
+	public void testGetDatafileIds() throws Exception {
+		client.getDatafileIds("");
+	}
+
+	@Test(expected = NotFoundException.class)
+	public void testGetDatafileIds2() throws Exception {
+		client.getDatafileIds(sessionId, new DataSelection().addDatafile(42L));
 	}
 
 }

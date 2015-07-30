@@ -18,7 +18,11 @@ public class DataSelection {
 	private Set<Long> investigationIds = new HashSet<>();
 
 	/**
+	 * Add a data file
+	 * 
 	 * @param datafileId
+	 *            the id of the data file
+	 * 
 	 * @return itself to allow chaining of addXXX calls
 	 */
 	public DataSelection addDatafile(long datafileId) {
@@ -27,7 +31,11 @@ public class DataSelection {
 	}
 
 	/**
+	 * Add data files
+	 * 
 	 * @param datafileIds
+	 *            the list of data file id values
+	 * 
 	 * @return itself to allow chaining of addXXX calls
 	 */
 	public DataSelection addDatafiles(List<Long> datafileIds) {
@@ -36,7 +44,11 @@ public class DataSelection {
 	}
 
 	/**
+	 * Add data set
+	 * 
 	 * @param datasetId
+	 *            the id of the data set
+	 * 
 	 * @return itself to allow chaining of addXXX calls
 	 */
 	public DataSelection addDataset(long datasetId) {
@@ -45,7 +57,11 @@ public class DataSelection {
 	}
 
 	/**
+	 * Add data sets
+	 * 
 	 * @param datasetIds
+	 *            the list of data set id values
+	 * 
 	 * @return itself to allow chaining of addXXX calls
 	 */
 	public DataSelection addDatasets(List<Long> datasetIds) {
@@ -54,7 +70,11 @@ public class DataSelection {
 	}
 
 	/**
+	 * Add investigation
+	 * 
 	 * @param investigationId
+	 *            the id of the investigation
+	 * 
 	 * @return itself to allow chaining of addXXX calls
 	 */
 	public DataSelection addInvestigation(long investigationId) {
@@ -63,7 +83,11 @@ public class DataSelection {
 	}
 
 	/**
+	 * Add investigations
+	 * 
 	 * @param investigationIds
+	 *            the list of investigation id values
+	 * 
 	 * @return itself to allow chaining of addXXX calls
 	 */
 	public DataSelection addInvestigations(List<Long> investigationIds) {
