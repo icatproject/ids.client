@@ -795,9 +795,9 @@ public class IdsClient {
 	 * @throws DataNotOnlineException
 	 *             if the data file is not online.
 	 * @throws NotImplementedException
-	 *             if the operation has not been implemented. if the user does
+	 *             if the operation has not been implemented or if the user does
 	 *             not have direct access to the file system where the IDS is
-	 *             storing data
+	 *             storing data.
 	 */
 	public Path getLink(String sessionId, long datafileId) throws BadRequestException, InsufficientPrivilegesException,
 			InternalException, NotFoundException, DataNotOnlineException, NotImplementedException {
