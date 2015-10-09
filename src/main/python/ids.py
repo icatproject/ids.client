@@ -62,7 +62,7 @@ class IdsClient(object):
         Return the status of the data specified by the datafileIds datasetIds and investigationIds
         """
         parameters = {}
-        parameters["sessionId"] = sessionId;   
+        if sessionId: parameters["sessionId"] = sessionId;   
         _fillParms(parameters, datafileIds, datasetIds, investigationIds)
         return  self._process("getStatus", parameters, "GET").read()
     

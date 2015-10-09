@@ -40,6 +40,11 @@ public abstract class Common extends BaseTest {
 		client.getStatus(sessionId, new DataSelection().addDatafile(42L));
 	}
 
+	@Test(expected = NotFoundException.class)
+	public void testGetStatus2() throws Exception {
+		client.getStatus(null, new DataSelection().addDatafile(42L));
+	}
+
 	@Test
 	public void testGetIcatUrl() throws Exception {
 		assertNotNull(client.getIcatUrl());
@@ -63,8 +68,10 @@ public abstract class Common extends BaseTest {
 
 	@Test
 	public void testGetDataUrl() {
-		URL url = client.getDataUrl(sessionId, new DataSelection().addDatasets(Arrays.asList(1L, 2L))
-				.addInvestigations(Arrays.asList(3L, 4L)).addDatafile(42L), Flag.ZIP_AND_COMPRESS, "my favourite name");
+		URL url = client.getDataUrl(
+				sessionId, new DataSelection().addDatasets(Arrays.asList(1L, 2L))
+						.addInvestigations(Arrays.asList(3L, 4L)).addDatafile(42L),
+				Flag.ZIP_AND_COMPRESS, "my favourite name");
 		assertEquals(setup.getIdsUrl().getHost(), url.getHost());
 		assertEquals(setup.getIdsUrl().getPort(), url.getPort());
 		assertEquals("/ids/getData", url.getPath());

@@ -88,6 +88,13 @@ class ClientTest(unittest.TestCase):
             self.fail("Should have thrown exception")
         except ids.IdsException as e:
             self.assertEqual("NotFoundException", e.code)
+            
+    def testGetStatus2(self):
+        try:
+            self.client.getStatus(None, datafileIds=[1, 2, 3])
+            self.fail("Should have thrown exception")
+        except ids.IdsException as e:
+            self.assertEqual("NotFoundException", e.code)
   
     def testRestore(self):
         if int(sys.argv[1]) == 1:

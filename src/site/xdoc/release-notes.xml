@@ -17,6 +17,7 @@
 				<li>Added getDatafileIds call to return list of file ids as
 					specified by a data selection or a preparedId</li>
 				<li>Deprecated calls to getData where filename is specified.</li>
+				<li>getStatus allows sessionId to be null.</li>
 			</ul>
 		</section>
 		<section name="1.2.0">
