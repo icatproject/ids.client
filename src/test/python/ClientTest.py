@@ -212,6 +212,18 @@ class ClientTest(unittest.TestCase):
         self.assertEquals(self.idsUrl, urlBits.scheme + "://" + urlBits.netloc)
         self.assertEquals("/ids/getData", urlBits.path)
         self.assertTrue("preparedId=" + self.sessionId in urlBits.query)
+        
+    def testBadPut(self):
+        with open("a.b", "w") as f:
+            f.write("")
+
+        with open ("a.b") as f:
+            try:
+                self.client.put(self.sessionId, f, "fred", self.dataset.id, self.dformat.id, "Description", datafileCreateTime="rubbish")
+                self.fail("Should have thrown exception")    
+            except ids.IdsException as e:
+                self.assertEqual("BadRequestException", e.code)
+                self.assertEqual("The datafileCreateTime parameter must be numeric", e.message)
        
     def testManyThings(self):
         f = open("a.b", "w")
